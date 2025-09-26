@@ -1,5 +1,3 @@
-
-
 # **针对基于Git工作流的静态站点内容管理与自动化部署的架构分析与技术选型报告**
 
 ## **摘要**
@@ -43,7 +41,7 @@ Git原生型CMS，如Decap CMS（前身为Netlify CMS）和TinaCMS，则采用�
 
 下表直观地总结了各方案与核心需求的匹配度：
 
-**表1：无头CMS解决方案特性比较矩阵**
+#### 表1：无头CMS解决方案特性比较矩阵
 
 | 功能需求 | Decap CMS (Git原生) | Strapi (API驱动, 定制同步) | Directus (数据优先, 定制同步) | 建议的定制化解决方案 |
 | :---- | :---- | :---- | :---- | :---- |
@@ -124,7 +122,7 @@ Git原生型CMS，如Decap CMS（前身为Netlify CMS）和TinaCMS，则采用�
 
 前端应用是非技术用户与复杂后端流程交互的唯一窗口，其设计必须以简洁、直观和安全为首要原则。
 
-**核心UI组件**
+#### 核心UI组件
 
 1. **文件浏览器**：一个清晰的视图，展示用户有权限编辑的文件和目录。可以使用一个轻量级的数据网格组件（如**SVAR React DataGrid** 45 或  
    **react-data-grid-lite** 46）来显示文件名、类型、最后修改时间等信息。  
@@ -172,7 +170,7 @@ Git原生型CMS，如Decap CMS（前身为Netlify CMS）和TinaCMS，则采用�
 
 虽然初期需要投入研发资源，但该定制化方案将交付一个稳定、高效且完全贴合业务流程的工具，其长期价值和可维护性将远超任何基于现有CMS的改造方案。建议项目团队以此架构蓝图为基础，进入详细设计与开发阶段。
 
-#### **引用的著作**
+### 引用
 
 1. Headless CMS \- Top Content Management Systems \- Jamstack, 访问时间为 九月 15, 2025， [https://jamstack.org/headless-cms/](https://jamstack.org/headless-cms/)  
 2. 12+ Best Headless CMS Open Source You Must Know in 2024 \- AHT Tech, 访问时间为 九月 15, 2025， [https://www.arrowhitech.com/market-insight/headless-cms-open-source/](https://www.arrowhitech.com/market-insight/headless-cms-open-source/)  
