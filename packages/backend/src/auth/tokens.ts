@@ -22,6 +22,7 @@ export interface TokenPayload {
   exp: number; // expires at
   type: 'access' | 'refresh';
   jti?: string; // token id for refresh tokens
+  [key: string]: any; // Index signature for PASETO compatibility
 }
 
 export interface UserPayload {
@@ -44,7 +45,7 @@ export async function generateAccessToken(user: UserPayload): Promise<string> {
     type: 'access'
   };
 
-  return V4.sign(payload, secretKey);
+  return V4.sign(payload as Record<string, unknown>, secretKey);
 }
 
 /**
@@ -64,7 +65,7 @@ export async function generateRefreshToken(user: UserPayload): Promise<string> {
     jti: tokenId
   };
 
-  const token = await V4.sign(payload, secretKey);
+  const token = await V4.sign(payload as Record<string, unknown>, secretKey);
 
   // Store refresh token in database
   await db.insert(refreshTokens).values({
@@ -156,13 +157,13 @@ export async function cleanupExpiredTokens(): Promise<void> {
       and(
         eq(refreshTokens.isRevoked, true),
         // Delete revoked tokens older than 30 days
-        gt(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), refreshTokens.createdAt)
+        gt(refreshTokens.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
       )
     );
 
   await db.delete(refreshTokens)
     .where(
       // Delete expired tokens
-      gt(new Date(), refreshTokens.expiresAt)
+      gt(refreshTokens.expiresAt, new Date())
     );
 }

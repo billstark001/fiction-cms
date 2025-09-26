@@ -159,13 +159,13 @@ export const sqliteQuerySchema = z.object({
 export const sqliteUpdateSchema = z.object({
   tableName: z.string().min(1, 'Table name is required'),
   rowId: z.union([z.string(), z.number()]),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
   commitMessage: z.string().max(500, 'Commit message must be less than 500 characters').optional(),
 });
 
 export const sqliteCreateSchema = z.object({
   tableName: z.string().min(1, 'Table name is required'),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
   commitMessage: z.string().max(500, 'Commit message must be less than 500 characters').optional(),
 });
 

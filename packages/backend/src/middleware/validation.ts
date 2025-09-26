@@ -15,7 +15,7 @@ export function validateJson<T>(schema: z.ZodSchema<T>) {
       if (error instanceof z.ZodError) {
         return c.json({
           error: 'Validation failed',
-          details: error.errors.map(err => ({
+          details: error.issues.map((err: any) => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -78,7 +78,7 @@ export function validateQuery<T>(schema: z.ZodSchema<T>) {
       if (error instanceof z.ZodError) {
         return c.json({
           error: 'Query validation failed',
-          details: error.errors.map(err => ({
+          details: error.issues.map((err: any) => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -108,7 +108,7 @@ export function validateParams<T>(schema: z.ZodSchema<T>) {
       if (error instanceof z.ZodError) {
         return c.json({
           error: 'Parameter validation failed',
-          details: error.errors.map(err => ({
+          details: error.issues.map((err: any) => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -154,7 +154,7 @@ export function validateForm<T>(schema: z.ZodSchema<T>) {
       if (error instanceof z.ZodError) {
         return c.json({
           error: 'Form validation failed',
-          details: error.errors.map(err => ({
+          details: error.issues.map((err: any) => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
