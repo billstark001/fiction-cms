@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod';
+import crypto from 'crypto';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -103,7 +104,6 @@ function validateProductionSettings(env: any) {
  * Generate a cryptographically secure key
  */
 function generateSecureKey(length: number): string {
-  const crypto = require('crypto');
   return crypto.randomBytes(length / 2).toString('hex');
 }
 
