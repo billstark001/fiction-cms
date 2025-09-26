@@ -13,14 +13,22 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.4",
-    "hono": "^4.6.9"
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.5",
+    "gh-pages": "^6.3.0",
+    "hono": "^4.9.8",
+    "simple-git": "^3.28.0",
+    "zod": "^4.1.11"
   },
   "devDependencies": {
-    "@types/node": "^20.11.5",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "tsx": "^4.7.0"
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.44.1",
+    "@typescript-eslint/parser": "^8.44.1",
+    "drizzle-kit": "^0.31.5",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "tsx": "^4.20.6"
   }
 }
