@@ -26,33 +26,32 @@ userRoutes.get('/', requirePermission('user.read'), validateQuery(paginationSche
   const { page, limit, orderBy = 'username', orderDirection, q } = c.get('validatedQuery');
   const offset = (page - 1) * limit;
 
-  try {
-    let query = db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      displayName: users.displayName,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt
-    }).from(users);
+    try {
+      const baseQuery = db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        displayName: users.displayName,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        lastLoginAt: users.lastLoginAt
+      }).from(users);
 
-    // Apply search filter if provided
-    if (q) {
-      query = query.where(
-        or(
-          like(users.username, `%${q}%`),
-          like(users.email, `%${q}%`),
-          like(users.displayName, `%${q}%`)
-        )
-      );
-    }
-
-    // Apply pagination and ordering
-    const usersData = await query
-      .limit(limit)
-      .offset(offset);
+      let usersData;
+      
+      // Apply search filter if provided
+      if (q) {
+        usersData = await baseQuery.where(
+          or(
+            like(users.username, `%${q}%`),
+            like(users.email, `%${q}%`),
+            like(users.displayName, `%${q}%`)
+          )
+        ).limit(limit).offset(offset);
+      } else {
+        usersData = await baseQuery.limit(limit).offset(offset);
+      }
 
     // Get total count for pagination
     const totalResult = await db.select({ count: users.id }).from(users);

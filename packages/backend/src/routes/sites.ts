@@ -59,53 +59,34 @@ siteRoutes.get('/', requirePermission('site.read'), validateQuery(paginationSche
   const offset = (page - 1) * limit;
   const user = c.get('user');
 
-  try {
-    let query = db.select({
-      id: sites.id,
-      name: sites.name,
-      githubRepositoryUrl: sites.githubRepositoryUrl,
-      localPath: sites.localPath,
-      buildCommand: sites.buildCommand,
-      buildOutputDir: sites.buildOutputDir,
-      editablePaths: sites.editablePaths,
-      isActive: sites.isActive,
-      createdAt: sites.createdAt,
-      updatedAt: sites.updatedAt
-    }).from(sites);
+    try {
+      const baseQuery = db.select({
+        id: sites.id,
+        name: sites.name,
+        githubRepositoryUrl: sites.githubRepositoryUrl,
+        localPath: sites.localPath,
+        buildCommand: sites.buildCommand,
+        buildOutputDir: sites.buildOutputDir,
+        editablePaths: sites.editablePaths,
+        isActive: sites.isActive,
+        createdAt: sites.createdAt,
+        updatedAt: sites.updatedAt
+      }).from(sites);
 
-    // Apply search filter if provided
-    if (q) {
-      query = query.where(
-        or(
-          like(sites.name, `%${q}%`),
-          like(sites.githubRepositoryUrl, `%${q}%`),
-          like(sites.localPath, `%${q}%`)
-        )
-      );
-    }
-
-    // If user doesn't have system admin, filter by sites they have access to
-    if (!user.permissions.includes('system.admin')) {
-      const userSiteAccess = await db.select({ siteId: userSites.siteId })
-        .from(userSites)
-        .where(eq(userSites.userId, user.id));
+      let sitesData;
       
-      const accessibleSiteIds = userSiteAccess.map(us => us.siteId);
-      
-      if (accessibleSiteIds.length === 0) {
-        return c.json({
-          sites: [],
-          pagination: { page, limit, total: 0, totalPages: 0 }
-        });
+      // Apply search filter if provided
+      if (q) {
+        sitesData = await baseQuery.where(
+          or(
+            like(sites.name, `%${q}%`),
+            like(sites.githubRepositoryUrl, `%${q}%`),
+            like(sites.localPath, `%${q}%`)
+          )
+        ).limit(limit).offset(offset);
+      } else {
+        sitesData = await baseQuery.limit(limit).offset(offset);
       }
-      
-      // Note: This is simplified for demo - in production use proper IN clause
-    }
-
-    // Apply pagination and ordering
-    const sitesData = await query
-      .limit(limit)
-      .offset(offset);
 
     // Get total count for pagination
     const totalResult = await db.select({ count: sites.id }).from(sites);

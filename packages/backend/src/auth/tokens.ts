@@ -1,18 +1,21 @@
 import { V4 } from 'paseto';
-import { createSecretKey } from 'crypto';
+import * as crypto from 'crypto';
 import { db } from '../db/index.js';
 import { refreshTokens, users } from '../db/schema.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
-// Generate or load secret key from environment
-const SECRET_KEY = process.env.PASETO_SECRET_KEY || 'your-32-character-secret-key-here12345';
+// Generate or load secret key from environment (PASETO v4 requires 32 bytes)
+const SECRET_KEY_STR = process.env.PASETO_SECRET_KEY || 'your-32-character-secret-key-here12345';
 
-if (SECRET_KEY.length < 32) {
+if (SECRET_KEY_STR.length < 32) {
   throw new Error('PASETO_SECRET_KEY must be at least 32 characters long');
 }
 
-const secretKey = createSecretKey(Buffer.from(SECRET_KEY.substring(0, 32), 'utf8'));
+// Create a proper ed25519 key pair for PASETO v4
+const keyPair = crypto.generateKeyPairSync('ed25519');
+const privateKey = keyPair.privateKey;
+const publicKey = keyPair.publicKey;
 
 export interface TokenPayload {
   sub: string; // user id
@@ -45,7 +48,7 @@ export async function generateAccessToken(user: UserPayload): Promise<string> {
     type: 'access'
   };
 
-  return V4.sign(payload as Record<string, unknown>, secretKey);
+  return V4.sign(payload as Record<string, unknown>, privateKey);
 }
 
 /**
@@ -65,7 +68,7 @@ export async function generateRefreshToken(user: UserPayload): Promise<string> {
     jti: tokenId
   };
 
-  const token = await V4.sign(payload as Record<string, unknown>, secretKey);
+  const token = await V4.sign(payload as Record<string, unknown>, privateKey);
 
   // Store refresh token in database
   await db.insert(refreshTokens).values({
@@ -84,7 +87,7 @@ export async function generateRefreshToken(user: UserPayload): Promise<string> {
  */
 export async function verifyToken(token: string): Promise<TokenPayload> {
   try {
-    const payload = await V4.verify(token, secretKey) as TokenPayload;
+    const payload = await V4.verify(token, publicKey) as TokenPayload;
     
     // Check if token has expired
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {

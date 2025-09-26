@@ -1,5 +1,6 @@
-import { db, sqlite } from '../db/index.js';
+import { db, sqlite as sqliteDb } from '../db/index.js';
 import { seedDatabase } from '../db/seed.js';
+import { createTables } from './create-tables.js';
 
 /**
  * Initialize database schema and seed initial data
@@ -8,13 +9,14 @@ export async function initializeDatabase() {
   try {
     console.log('Initializing database...');
 
-    // Run migrations (in a real app, you'd have proper migration files)
-    // For now, we'll just ensure tables exist by running a simple query
-    // and let Drizzle handle the schema creation
-    
     // Test database connection
-    const result = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table';").all();
+    const result = sqliteDb.prepare("SELECT name FROM sqlite_master WHERE type='table';").all();
     console.log('Database connected. Tables:', result.length);
+
+    // If no tables exist, create them manually
+    if (result.length === 0) {
+      createTables();
+    }
 
     // Seed database with default data
     await seedDatabase();

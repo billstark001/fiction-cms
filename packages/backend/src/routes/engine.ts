@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import fs from 'fs/promises';
+import path from 'path';
 import { db } from '../db/index.js';
 import { sites } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -37,7 +39,7 @@ async function getSiteConfig(siteId: string): Promise<SiteConfig | null> {
   }
 
   // Decrypt GitHub PAT (simplified for demo)
-  const githubPat = site.githubPatEncrypted.toString('utf8');
+  const githubPat = (site.githubPatEncrypted as Buffer).toString('utf8');
 
   return {
     id: site.id,
@@ -115,7 +117,7 @@ engineRoutes.get('/sites/:siteId/files/*',
       }
 
       return c.json({
-        content: result.content,
+        content: result.data,
         path: filePath,
         timestamp: new Date().toISOString()
       });
@@ -165,7 +167,7 @@ engineRoutes.put('/sites/:siteId/files/*',
         email: user.email 
       };
       
-      const commitResult = await gitManager.commitAndPushChanges(
+      const commitResult = await gitManager.commitAndPush(
         siteConfig,
         [filePath],
         defaultCommitMessage,
@@ -236,7 +238,7 @@ engineRoutes.post('/sites/:siteId/files',
         email: user.email 
       };
       
-      const commitResult = await gitManager.commitAndPushChanges(
+      const commitResult = await gitManager.commitAndPush(
         siteConfig,
         [filePath],
         defaultCommitMessage,
@@ -276,13 +278,15 @@ engineRoutes.delete('/sites/:siteId/files/*',
         return c.json({ error: 'Site not found' }, 404);
       }
 
-      // Delete file
-      const deleteResult = await contentManager.deleteFile(siteConfig, filePath);
-      
-      if (!deleteResult.success) {
+      // Delete file using file system
+      const fullPath = path.join(siteConfig.localPath, filePath);
+      try {
+        await fs.unlink(fullPath);
+        const deleteResult = { success: true };
+      } catch (error) {
         return c.json({ 
           error: 'Failed to delete file',
-          details: deleteResult.error 
+          details: error instanceof Error ? error.message : 'Unknown error'
         }, 500);
       }
 
@@ -293,7 +297,7 @@ engineRoutes.delete('/sites/:siteId/files/*',
         email: user.email 
       };
       
-      const commitResult = await gitManager.commitAndPushChanges(
+      const commitResult = await gitManager.commitAndPush(
         siteConfig,
         [filePath],
         commitMessage,
@@ -335,7 +339,8 @@ engineRoutes.get('/sites/:siteId/sqlite/:database/tables/:table',
         siteConfig,
         database,
         tableName,
-        { limit, offset, orderBy, orderDirection }
+        limit,
+        offset
       );
       
       if (!result.success) {
@@ -375,7 +380,7 @@ engineRoutes.post('/sites/:siteId/sqlite/:database/tables/:table/rows',
         return c.json({ error: 'Site not found' }, 404);
       }
 
-      const result = await contentManager.sqlite.insertSQLiteRow(
+      const result = await contentManager.sqlite.insertSQLiteData(
         siteConfig,
         database,
         tableName,
@@ -396,7 +401,7 @@ engineRoutes.post('/sites/:siteId/sqlite/:database/tables/:table/rows',
         email: user.email 
       };
       
-      const commitResult = await gitManager.commitAndPushChanges(
+      const commitResult = await gitManager.commitAndPush(
         siteConfig,
         [database],
         defaultCommitMessage,

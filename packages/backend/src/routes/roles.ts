@@ -24,31 +24,30 @@ roleRoutes.get('/', requirePermission('user.read'), validateQuery(paginationSche
   const { page, limit, orderBy = 'name', orderDirection, q } = c.get('validatedQuery');
   const offset = (page - 1) * limit;
 
-  try {
-    let query = db.select({
-      id: roles.id,
-      name: roles.name,
-      displayName: roles.displayName,
-      description: roles.description,
-      isDefault: roles.isDefault,
-      createdAt: roles.createdAt
-    }).from(roles);
+    try {
+      const baseQuery = db.select({
+        id: roles.id,
+        name: roles.name,
+        displayName: roles.displayName,
+        description: roles.description,
+        isDefault: roles.isDefault,
+        createdAt: roles.createdAt
+      }).from(roles);
 
-    // Apply search filter if provided
-    if (q) {
-      query = query.where(
-        or(
-          like(roles.name, `%${q}%`),
-          like(roles.displayName, `%${q}%`),
-          like(roles.description, `%${q}%`)
-        )
-      );
-    }
-
-    // Apply pagination and ordering
-    const rolesData = await query
-      .limit(limit)
-      .offset(offset);
+      let rolesData;
+      
+      // Apply search filter if provided
+      if (q) {
+        rolesData = await baseQuery.where(
+          or(
+            like(roles.name, `%${q}%`),
+            like(roles.displayName, `%${q}%`),
+            like(roles.description, `%${q}%`)
+          )
+        ).limit(limit).offset(offset);
+      } else {
+        rolesData = await baseQuery.limit(limit).offset(offset);
+      }
 
     // Get total count for pagination
     const totalResult = await db.select({ count: roles.id }).from(roles);
@@ -197,7 +196,7 @@ roleRoutes.post('/', requirePermission('user.admin'), validateJson(createRoleSch
         .from(permissions);
 
       const validPermissionIds = existingPermissions.map(p => p.id);
-      const invalidIds = permissionIds.filter(id => !validPermissionIds.includes(id));
+      const invalidIds = permissionIds.filter((id: string) => !validPermissionIds.includes(id));
 
       if (invalidIds.length > 0) {
         return c.json({ 
@@ -267,7 +266,7 @@ roleRoutes.put('/:id', requirePermission('user.admin'), validateParams(idParamSc
           .from(permissions);
 
         const validPermissionIds = existingPermissions.map(p => p.id);
-        const invalidIds = permissionIds.filter(permId => !validPermissionIds.includes(permId));
+        const invalidIds = permissionIds.filter((permId: string) => !validPermissionIds.includes(permId));
 
         if (invalidIds.length > 0) {
           return c.json({ 

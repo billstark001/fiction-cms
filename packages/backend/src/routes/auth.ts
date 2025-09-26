@@ -23,24 +23,21 @@ auth.post('/login', validateJson(loginSchema), async (c) => {
 
   try {
     // Find user by username or email
-    const user = await db.select()
+    let user = await db.select()
       .from(users)
       .where(eq(users.username, username))
       .get();
 
     if (!user) {
       // Check by email as fallback
-      const userByEmail = await db.select()
+      user = await db.select()
         .from(users)
         .where(eq(users.email, username))
         .get();
       
-      if (!userByEmail) {
+      if (!user) {
         return c.json({ error: 'Invalid credentials' }, 401);
       }
-      
-      // Use email user for authentication
-      Object.assign(user, userByEmail);
     }
 
     if (!user.isActive) {
