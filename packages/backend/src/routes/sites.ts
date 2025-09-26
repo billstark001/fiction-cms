@@ -13,26 +13,50 @@ import {
 } from '../schemas/index.js';
 import { SiteConfig } from '../engine/types.js';
 import { validateSiteConfig } from '../engine/config-examples.js';
+import crypto from 'crypto';
 
 const siteRoutes = new Hono();
 
 // Apply authentication to all site routes
 siteRoutes.use('*', authMiddleware);
 
+// Get encryption key from environment, generate one if not present
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ? 
+  Buffer.from(process.env.ENCRYPTION_KEY, 'hex') : 
+  crypto.randomBytes(32);
+
 /**
- * Encrypt GitHub PAT for storage (simplified encryption for demo)
+ * Encrypt GitHub PAT for secure storage using AES-256-CBC
  */
-function encryptPat(pat: string): Buffer {
-  // In production, use proper encryption like AES-256-GCM
-  return Buffer.from(pat, 'utf8');
+function encryptPat(pat: string): { encryptedData: string; iv: string } {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+  
+  let encrypted = cipher.update(pat, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  return {
+    encryptedData: encrypted,
+    iv: iv.toString('hex')
+  };
 }
 
 /**
- * Decrypt GitHub PAT from storage (simplified decryption for demo)
+ * Decrypt GitHub PAT from secure storage
  */
 function decryptPat(encryptedPat: Buffer): string {
-  // In production, use proper decryption
-  return encryptedPat.toString('utf8');
+  try {
+    const data = JSON.parse(encryptedPat.toString('utf8'));
+    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, Buffer.from(data.iv, 'hex'));
+    
+    let decrypted = decipher.update(data.encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  } catch (error) {
+    console.error('Failed to decrypt PAT:', error);
+    throw new Error('Failed to decrypt GitHub PAT');
+  }
 }
 
 /**
@@ -198,13 +222,14 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
 
     // Encrypt GitHub PAT
     const encryptedPat = encryptPat(githubPat);
+    const encryptedPatBuffer = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
 
     // Create site
     const newSite = await db.insert(sites)
       .values({
         name,
         githubRepositoryUrl,
-        githubPatEncrypted: encryptedPat,
+        githubPatEncrypted: encryptedPatBuffer,
         localPath,
         buildCommand: buildCommand || null,
         buildOutputDir: buildOutputDir || null,
@@ -296,7 +321,10 @@ siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idPar
     const updateData: any = { updatedAt: new Date() };
     if (name !== undefined) updateData.name = name;
     if (githubRepositoryUrl !== undefined) updateData.githubRepositoryUrl = githubRepositoryUrl;
-    if (githubPat !== undefined) updateData.githubPatEncrypted = encryptPat(githubPat);
+    if (githubPat !== undefined) {
+      const encryptedPat = encryptPat(githubPat);
+      updateData.githubPatEncrypted = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
+    }
     if (localPath !== undefined) updateData.localPath = localPath;
     if (buildCommand !== undefined) updateData.buildCommand = buildCommand;
     if (buildOutputDir !== undefined) updateData.buildOutputDir = buildOutputDir;

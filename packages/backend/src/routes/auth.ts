@@ -6,6 +6,8 @@ import { eq, and, gt } from 'drizzle-orm';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, revokeRefreshToken, revokeAllUserRefreshTokens } from '../auth/tokens.js';
 import { authMiddleware } from '../auth/middleware.js';
 import { validateJson } from '../middleware/validation.js';
+import { authRateLimit } from '../middleware/rate-limiting.js';
+import { handleError, createErrorResponse, sanitizeErrorMessage } from '../utils/error-handling.js';
 import { 
   loginSchema, 
   registerSchema, 
@@ -18,7 +20,7 @@ const auth = new Hono();
 /**
  * POST /auth/login - User login
  */
-auth.post('/login', validateJson(loginSchema), async (c) => {
+auth.post('/login', authRateLimit, validateJson(loginSchema), async (c) => {
   const { username, password } = c.get('validatedData');
 
   try {
@@ -36,18 +38,18 @@ auth.post('/login', validateJson(loginSchema), async (c) => {
         .get();
       
       if (!user) {
-        return c.json({ error: 'Invalid credentials' }, 401);
+        return createErrorResponse('Invalid credentials', 'INVALID_CREDENTIALS', 401);
       }
     }
 
     if (!user.isActive) {
-      return c.json({ error: 'Account is disabled' }, 401);
+      return createErrorResponse('Account is disabled', 'ACCOUNT_DISABLED', 401);
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     if (!isValidPassword) {
-      return c.json({ error: 'Invalid credentials' }, 401);
+      return createErrorResponse('Invalid credentials', 'INVALID_CREDENTIALS', 401);
     }
 
     // Update last login timestamp
@@ -82,15 +84,14 @@ auth.post('/login', validateJson(loginSchema), async (c) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'User login', c);
   }
 });
 
 /**
  * POST /auth/register - User registration
  */
-auth.post('/register', validateJson(registerSchema), async (c) => {
+auth.post('/register', authRateLimit, validateJson(registerSchema), async (c) => {
   const { username, email, password, displayName } = c.get('validatedData');
 
   try {
@@ -156,8 +157,7 @@ auth.post('/register', validateJson(registerSchema), async (c) => {
       }
     }, 201);
   } catch (error) {
-    console.error('Registration error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'User registration', c);
   }
 });
 
@@ -234,8 +234,7 @@ auth.post('/logout-all', authMiddleware, async (c) => {
     await revokeAllUserRefreshTokens(user.id);
     return c.json({ message: 'Logged out from all devices' });
   } catch (error) {
-    console.error('Logout all error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Logout all devices', c);
   }
 });
 
@@ -279,8 +278,7 @@ auth.post('/change-password', authMiddleware, validateJson(changePasswordSchema)
 
     return c.json({ message: 'Password changed successfully' });
   } catch (error) {
-    console.error('Change password error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Change password', c);
   }
 });
 
@@ -318,8 +316,7 @@ auth.get('/me', authMiddleware, async (c) => {
       }
     });
   } catch (error) {
-    console.error('Get user profile error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Get user profile', c);
   }
 });
 

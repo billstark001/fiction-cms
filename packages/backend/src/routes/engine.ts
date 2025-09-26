@@ -15,10 +15,15 @@ import {
   sqliteCreateSchema,
   sqliteDeleteSchema,
   siteIdParamSchema,
-  filePathParamSchema
+  filePathParamSchema,
+  deploymentTriggerSchema,
+  paginationSchema
 } from '../schemas/index.js';
-import { contentManager, gitManager } from '../engine/index.js';
+import { contentManager, gitManager, deploymentEngine } from '../engine/index.js';
 import { SiteConfig } from '../engine/types.js';
+import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
+import { sanitizeFileUpload, bodyLimit } from '../middleware/security.js';
+import { handleError } from '../utils/error-handling.js';
 
 const engineRoutes = new Hono();
 
@@ -384,7 +389,7 @@ engineRoutes.post('/sites/:siteId/sqlite/:database/tables/:table/rows',
         siteConfig,
         database,
         tableName,
-        data
+        [data] // Wrap in array as expected by the method
       );
       
       if (!result.success) {
@@ -420,5 +425,343 @@ engineRoutes.post('/sites/:siteId/sqlite/:database/tables/:table/rows',
     }
   }
 );
+
+/**
+ * PUT /engine/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId - Update row
+ */
+engineRoutes.put('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId', 
+  requireSitePermission('content.write'),
+  validateJson(sqliteUpdateSchema.omit({ tableName: true, rowId: true })),
+  async (c) => {
+    const siteId = c.req.param('siteId');
+    const database = c.req.param('database');
+    const tableName = c.req.param('table');
+    const rowId = c.req.param('rowId');
+    const { data, commitMessage } = c.get('validatedData');
+    const user = c.get('user');
+
+    try {
+      const siteConfig = await getSiteConfig(siteId);
+      if (!siteConfig) {
+        return c.json({ error: 'Site not found' }, 404);
+      }
+
+      const result = await contentManager.sqlite.updateSQLiteData(
+        siteConfig,
+        database,
+        tableName,
+        [{
+          whereCondition: { id: rowId }, // Assuming 'id' is the primary key
+          updateData: data
+        }]
+      );
+      
+      if (!result.success) {
+        return c.json({ 
+          error: 'Failed to update row',
+          details: result.error 
+        }, 500);
+      }
+
+      // Commit changes
+      const defaultCommitMessage = commitMessage || `Update row ${rowId} in ${tableName}`;
+      const author = { 
+        name: user.displayName || user.username, 
+        email: user.email 
+      };
+      
+      const commitResult = await gitManager.commitAndPush(
+        siteConfig,
+        [database],
+        defaultCommitMessage,
+        author
+      );
+
+      return c.json({
+        message: 'Row updated successfully',
+        data: result.data,
+        commitHash: commitResult.hash || null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Update SQLite row error:', error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  }
+);
+
+/**
+ * DELETE /engine/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId - Delete row
+ */
+engineRoutes.delete('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId', 
+  requireSitePermission('content.write'),
+  validateJson(sqliteDeleteSchema.omit({ tableName: true, rowId: true })),
+  async (c) => {
+    const siteId = c.req.param('siteId');
+    const database = c.req.param('database');
+    const tableName = c.req.param('table');
+    const rowId = c.req.param('rowId');
+    const { commitMessage } = c.get('validatedData');
+    const user = c.get('user');
+
+    try {
+      const siteConfig = await getSiteConfig(siteId);
+      if (!siteConfig) {
+        return c.json({ error: 'Site not found' }, 404);
+      }
+
+      const result = await contentManager.sqlite.deleteSQLiteData(
+        siteConfig,
+        database,
+        tableName,
+        [{ id: rowId }] // Wrap in array with condition object
+      );
+      
+      if (!result.success) {
+        return c.json({ 
+          error: 'Failed to delete row',
+          details: result.error 
+        }, 500);
+      }
+
+      // Commit changes
+      const defaultCommitMessage = commitMessage || `Delete row ${rowId} from ${tableName}`;
+      const author = { 
+        name: user.displayName || user.username, 
+        email: user.email 
+      };
+      
+      const commitResult = await gitManager.commitAndPush(
+        siteConfig,
+        [database],
+        defaultCommitMessage,
+        author
+      );
+
+      return c.json({
+        message: 'Row deleted successfully',
+        rowId: rowId,
+        commitHash: commitResult.hash || null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Delete SQLite row error:', error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  }
+);
+
+/**
+ * POST /engine/sites/:siteId/assets - Upload asset file
+ */
+engineRoutes.post('/sites/:siteId/assets', 
+  uploadRateLimit,
+  bodyLimit(10 * 1024 * 1024), // 10MB limit for assets
+  sanitizeFileUpload(['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'pdf', 'txt', 'md'], 10 * 1024 * 1024),
+  requireSitePermission('content.write'),
+  async (c) => {
+    const siteId = c.req.param('siteId');
+    const user = c.get('user');
+
+    try {
+      const siteConfig = await getSiteConfig(siteId);
+      if (!siteConfig) {
+        return c.json({ error: 'Site not found' }, 404);
+      }
+
+      const body = await c.req.parseBody();
+      const file = body['file'] as File;
+      const path = body['path'] as string;
+      const commitMessage = body['commitMessage'] as string;
+
+      if (!file) {
+        return c.json({ error: 'No file provided' }, 400);
+      }
+
+      if (!path) {
+        return c.json({ error: 'No path provided' }, 400);
+      }
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      
+      const result = await contentManager.asset.uploadAsset(
+        siteConfig,
+        path,
+        buffer
+      );
+      
+      if (!result.success) {
+        return c.json({ 
+          error: 'Failed to upload asset',
+          details: result.error 
+        }, 500);
+      }
+
+      // Commit changes
+      const defaultCommitMessage = commitMessage || `Upload asset: ${path}`;
+      const author = { 
+        name: user.displayName || user.username, 
+        email: user.email 
+      };
+      
+      const commitResult = await gitManager.commitAndPush(
+        siteConfig,
+        [path],
+        defaultCommitMessage,
+        author
+      );
+
+      return c.json({
+        message: 'Asset uploaded successfully',
+        path: path,
+        size: buffer.length,
+        commitHash: commitResult.hash || null,
+        timestamp: new Date().toISOString()
+      }, 201);
+    } catch (error) {
+      return handleError(error, 'Upload asset', c);
+    }
+  }
+);
+
+/**
+ * POST /engine/sites/:siteId/deploy - Trigger deployment
+ */
+engineRoutes.post('/sites/:siteId/deploy', 
+  deployRateLimit,
+  requireSitePermission('site.deploy'),
+  validateJson(deploymentTriggerSchema),
+  async (c) => {
+    const siteId = c.req.param('siteId');
+    const { force, branch } = c.get('validatedData');
+    const user = c.get('user');
+
+    try {
+      const siteConfig = await getSiteConfig(siteId);
+      if (!siteConfig) {
+        return c.json({ error: 'Site not found' }, 404);
+      }
+
+      const taskId = await deploymentEngine.createDeploymentTask(
+        siteConfig, 
+        user.username
+      );
+
+      return c.json({
+        message: 'Deployment task created',
+        taskId,
+        siteId,
+        triggeredBy: user.username,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      return handleError(error, 'Trigger deployment', c);
+    }
+  }
+);
+
+/**
+ * GET /engine/sites/:siteId/deploy/:taskId - Get deployment status
+ */
+engineRoutes.get('/sites/:siteId/deploy/:taskId', 
+  requireSitePermission('site.read'),
+  async (c) => {
+    const siteId = c.req.param('siteId');
+    const taskId = c.req.param('taskId');
+
+    try {
+      const siteConfig = await getSiteConfig(siteId);
+      if (!siteConfig) {
+        return c.json({ error: 'Site not found' }, 404);
+      }
+
+      const status = deploymentEngine.getTaskStatus(taskId);
+
+      if (!status) {
+        return c.json({ error: 'Deployment task not found' }, 404);
+      }
+
+      // Verify task belongs to this site
+      if (status.siteId !== siteId) {
+        return c.json({ error: 'Deployment task not found' }, 404);
+      }
+
+      return c.json({
+        taskId,
+        status: status.status,
+        siteId: status.siteId,
+        createdAt: status.createdAt,
+        startedAt: status.startedAt,
+        completedAt: status.completedAt,
+        progress: calculateProgress(status),
+        logs: status.logs,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Get deployment status error:', error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  }
+);
+
+/**
+ * GET /engine/sites/:siteId/deploy - Get all deployment tasks for site
+ */
+engineRoutes.get('/sites/:siteId/deploy', 
+  requireSitePermission('site.read'),
+  validateQuery(paginationSchema.partial()),
+  async (c) => {
+    const siteId = c.req.param('siteId');
+    const { page = 1, limit = 20 } = c.get('validatedQuery');
+
+    try {
+      const siteConfig = await getSiteConfig(siteId);
+      if (!siteConfig) {
+        return c.json({ error: 'Site not found' }, 404);
+      }
+
+      const allTasks = deploymentEngine.getActiveTasks()
+        .filter(task => task.siteId === siteId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      const offset = (page - 1) * limit;
+      const paginatedTasks = allTasks.slice(offset, offset + limit);
+
+      return c.json({
+        tasks: paginatedTasks.map(task => ({
+          taskId: task.id,
+          status: task.status,
+          createdAt: task.createdAt,
+          startedAt: task.startedAt,
+          completedAt: task.completedAt,
+          progress: calculateProgress(task)
+        })),
+        pagination: {
+          page,
+          limit,
+          total: allTasks.length,
+          totalPages: Math.ceil(allTasks.length / limit)
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Get deployment tasks error:', error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  }
+);
+
+// Helper function to calculate progress
+function calculateProgress(task: any): number {
+  switch (task.status) {
+    case 'pending': return 0;
+    case 'pulling': return 20;
+    case 'building': return 50;
+    case 'deploying': return 80;
+    case 'completed': return 100;
+    case 'failed': return 100;
+    default: return 0;
+  }
+}
 
 export { engineRoutes };
