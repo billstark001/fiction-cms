@@ -10,7 +10,7 @@ export const blogSiteConfig: SiteConfig = {
   id: 'my-blog',
   name: 'My Personal Blog',
   githubRepositoryUrl: 'https://github.com/username/my-blog',
-  githubPat: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // 实际使用时从环境变量获取
+  githubPat: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Use environment variable in production
   localPath: '/var/fiction-cms/repos/my-blog',
   buildCommand: 'npm run build',
   buildOutputDir: 'dist',
@@ -27,17 +27,17 @@ export const blogSiteConfig: SiteConfig = {
         {
           tableName: 'posts',
           editableColumns: ['title', 'slug', 'content', 'excerpt', 'published_at', 'featured'],
-          displayName: '博客文章'
+          displayName: 'Blog Posts'
         },
         {
           tableName: 'categories',
           editableColumns: ['name', 'description', 'slug', 'color'],
-          displayName: '分类管理'
+          displayName: 'Category Management'
         },
         {
           tableName: 'tags',
           editableColumns: ['name', 'description', 'slug'],
-          displayName: '标签管理'
+          displayName: 'Tag Management'
         }
       ]
     }
@@ -91,12 +91,12 @@ export const portfolioSiteConfig: SiteConfig = {
             'featured',
             'completed_at'
           ],
-          displayName: '项目作品'
+          displayName: 'Project Portfolio'
         },
         {
           tableName: 'skills',
           editableColumns: ['name', 'category', 'proficiency', 'years_experience'],
-          displayName: '技能管理'
+          displayName: 'Skills Management'
         }
       ]
     }
@@ -157,43 +157,43 @@ export function validateSiteConfig(config: SiteConfig): string[] {
   const errors: string[] = [];
 
   if (!config.id) {
-    errors.push('站点ID不能为空');
+    errors.push('Site ID cannot be empty');
   }
 
   if (!config.name) {
-    errors.push('站点名称不能为空');
+    errors.push('Site name cannot be empty');
   }
 
   if (!config.githubRepositoryUrl) {
-    errors.push('GitHub仓库URL不能为空');
+    errors.push('GitHub repository URL cannot be empty');
   } else if (!config.githubRepositoryUrl.includes('github.com')) {
-    errors.push('GitHub仓库URL格式不正确');
+    errors.push('Invalid GitHub repository URL format');
   }
 
   if (!config.githubPat) {
-    errors.push('GitHub个人访问令牌不能为空');
+    errors.push('GitHub Personal Access Token cannot be empty');
   } else if (!config.githubPat.startsWith('ghp_')) {
-    errors.push('GitHub个人访问令牌格式不正确');
+    errors.push('Invalid GitHub Personal Access Token format');
   }
 
   if (!config.localPath) {
-    errors.push('本地路径不能为空');
+    errors.push('Local path cannot be empty');
   }
 
-  // 验证SQLite文件配置
+  // Validate SQLite file configuration
   if (config.sqliteFiles) {
     config.sqliteFiles.forEach((sqliteFile, index) => {
       if (!sqliteFile.filePath) {
-        errors.push(`SQLite文件配置${index + 1}的文件路径不能为空`);
+        errors.push(`SQLite file configuration ${index + 1} file path cannot be empty`);
       }
       
       if (!sqliteFile.editableTables || sqliteFile.editableTables.length === 0) {
-        errors.push(`SQLite文件配置${index + 1}必须至少包含一个可编辑的表`);
+        errors.push(`SQLite file configuration ${index + 1} must contain at least one editable table`);
       }
       
       sqliteFile.editableTables.forEach((table, tableIndex) => {
         if (!table.tableName) {
-          errors.push(`SQLite文件${index + 1}的表配置${tableIndex + 1}缺少表名`);
+          errors.push(`SQLite file ${index + 1} table configuration ${tableIndex + 1} missing table name`);
         }
       });
     });
