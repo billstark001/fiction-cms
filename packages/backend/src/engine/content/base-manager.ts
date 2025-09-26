@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { SiteConfig, FileOperationResult } from '../types.js';
 import { commonFileOperations } from './common-operations.js';
+import { logHelpers } from '../../utils/logger.js';
 
 /**
  * 基础管理器类
@@ -18,9 +19,13 @@ export abstract class BaseManager {
     relativePath: string,
     operationName: string
   ): Promise<FileOperationResult> {
+    const startTime = Date.now();
+    const fullPath = path.join(siteConfig.localPath, relativePath);
+    
     try {
       // 统一的路径权限检查
       if (!commonFileOperations.isPathAllowed(siteConfig, relativePath)) {
+        logHelpers.fileOperation('read', relativePath, undefined, Date.now() - startTime, false);
         return {
           success: false,
           error: '访问被拒绝：文件不在允许的编辑路径内'
@@ -28,11 +33,44 @@ export abstract class BaseManager {
       }
 
       const result = await operation();
+      const duration = Date.now() - startTime;
+      
+      // Log successful operation
+      let fileSize: number | undefined;
+      try {
+        const stats = await fs.stat(fullPath);
+        fileSize = stats.size;
+      } catch {
+        // File might not exist for read operations
+      }
+      
+      logHelpers.fileOperation(
+        operationName.includes('读取') || operationName.includes('read') ? 'read' : 
+        operationName.includes('写入') || operationName.includes('write') ? 'write' :
+        operationName.includes('删除') || operationName.includes('delete') ? 'delete' : 'create',
+        relativePath,
+        fileSize,
+        duration,
+        true
+      );
+      
       return {
         success: true,
         data: result
       };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      logHelpers.fileOperation(
+        operationName.includes('读取') || operationName.includes('read') ? 'read' : 
+        operationName.includes('写入') || operationName.includes('write') ? 'write' :
+        operationName.includes('删除') || operationName.includes('delete') ? 'delete' : 'create',
+        relativePath,
+        undefined,
+        duration,
+        false
+      );
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : `${operationName}失败`
