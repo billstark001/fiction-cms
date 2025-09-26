@@ -1,10 +1,13 @@
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { api } from './routes/index.js'
 import { initializeDatabase } from './utils/db-init.js'
 import { cleanupExpiredTokens } from './auth/tokens.js'
+import { securityHeaders, requestId, csp, cors, bodyLimit } from './middleware/security.js'
+import { apiRateLimit } from './middleware/rate-limiting.js'
+import { handleError } from './utils/error-handling.js'
+import { config, isDevelopment } from './config/environment.js'
 import dotenv from 'dotenv'
 
 // Load environment variables
@@ -12,12 +15,18 @@ dotenv.config()
 
 const app = new Hono()
 
-// Middleware
-app.use('*', cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // Add your frontend URLs
-  credentials: true,
-}))
+// Security middleware (applied first)
+app.use('*', securityHeaders)
+app.use('*', requestId)
+app.use('*', csp)
+app.use('*', cors([config.FRONTEND_URL]))
+app.use('*', bodyLimit(config.MAX_BODY_SIZE))
+
+// Logging middleware
 app.use('*', logger())
+
+// Rate limiting for API routes
+app.use('/api/*', apiRateLimit)
 
 // API routes
 app.route('/api', api)
@@ -34,11 +43,7 @@ app.get('/', (c) => {
 
 // Error handler
 app.onError((err, c) => {
-  console.error('Unhandled error:', err)
-  return c.json({ 
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  }, 500)
+  return handleError(err, 'Global error handler', c, true);
 })
 
 // Not found handler
@@ -49,7 +54,7 @@ app.notFound((c) => {
   }, 404)
 })
 
-const port = parseInt(process.env.PORT || '3001')
+const port = config.PORT
 
 async function startServer() {
   try {
@@ -66,7 +71,12 @@ async function startServer() {
     console.log(`🚀 Fiction CMS Backend starting on port ${port}`)
     console.log(`📊 Health check: http://localhost:${port}/api/health`)
     console.log(`📚 API endpoints: http://localhost:${port}/api`)
-    console.log('🔐 Default admin credentials: admin / admin123')
+    console.log(`🌐 Frontend URL: ${config.FRONTEND_URL}`)
+    
+    if (isDevelopment) {
+      console.log('🔐 Default admin credentials: admin / admin123')
+      console.log('⚠️  Running in development mode')
+    }
     
     serve({
       fetch: app.fetch,

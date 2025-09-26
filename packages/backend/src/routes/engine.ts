@@ -21,6 +21,9 @@ import {
 } from '../schemas/index.js';
 import { contentManager, gitManager, deploymentEngine } from '../engine/index.js';
 import { SiteConfig } from '../engine/types.js';
+import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
+import { sanitizeFileUpload, bodyLimit } from '../middleware/security.js';
+import { handleError } from '../utils/error-handling.js';
 
 const engineRoutes = new Hono();
 
@@ -552,6 +555,9 @@ engineRoutes.delete('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId',
  * POST /engine/sites/:siteId/assets - Upload asset file
  */
 engineRoutes.post('/sites/:siteId/assets', 
+  uploadRateLimit,
+  bodyLimit(10 * 1024 * 1024), // 10MB limit for assets
+  sanitizeFileUpload(['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'pdf', 'txt', 'md'], 10 * 1024 * 1024),
   requireSitePermission('content.write'),
   async (c) => {
     const siteId = c.req.param('siteId');
@@ -613,8 +619,7 @@ engineRoutes.post('/sites/:siteId/assets',
         timestamp: new Date().toISOString()
       }, 201);
     } catch (error) {
-      console.error('Upload asset error:', error);
-      return c.json({ error: 'Internal server error' }, 500);
+      return handleError(error, 'Upload asset', c);
     }
   }
 );
@@ -623,6 +628,7 @@ engineRoutes.post('/sites/:siteId/assets',
  * POST /engine/sites/:siteId/deploy - Trigger deployment
  */
 engineRoutes.post('/sites/:siteId/deploy', 
+  deployRateLimit,
   requireSitePermission('site.deploy'),
   validateJson(deploymentTriggerSchema),
   async (c) => {
@@ -649,8 +655,7 @@ engineRoutes.post('/sites/:siteId/deploy',
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Trigger deployment error:', error);
-      return c.json({ error: 'Internal server error' }, 500);
+      return handleError(error, 'Trigger deployment', c);
     }
   }
 );
