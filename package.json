@@ -1,0 +1,25 @@
+{
+  "name": "fiction-cms",
+  "version": "1.0.0",
+  "description": "A modern fiction CMS with Vite+React frontend and Hono backend",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "build": "pnpm --filter backend build && pnpm --filter frontend build",
+    "lint": "pnpm --filter \"*\" lint",
+    "type-check": "pnpm --filter \"*\" type-check"
+  },
+  "keywords": ["fiction", "cms", "vite", "react", "hono", "typescript"],
+  "author": "Bill Toshiaki Stark",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  }
+}
