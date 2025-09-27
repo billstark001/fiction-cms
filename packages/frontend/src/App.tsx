@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import SiteManagement from './pages/SiteManagement';
 import SiteContentManagement from './pages/SiteContentManagement';
+import CreateSite from './pages/CreateSite';
 import './index.css';
 
 function App() {
@@ -47,6 +48,15 @@ function App() {
           element={
             <ProtectedRoute>
               <SiteManagement />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/sites/create" 
+          element={
+            <ProtectedRoute requiredRoles={['admin']}>
+              <CreateSite />
             </ProtectedRoute>
           } 
         />
