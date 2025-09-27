@@ -6,6 +6,7 @@ import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
   server: {
+    port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

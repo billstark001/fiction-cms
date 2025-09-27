@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { SiteConfig, FileOperationResult } from '../types.js';
 import { BaseManager } from './base-manager.js';
+import { logHelpers } from '../../utils/logger.js';
 
 /**
  * 纯文本文件管理器

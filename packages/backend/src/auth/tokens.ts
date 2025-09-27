@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import { refreshTokens, users } from '../db/schema.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { loggers, logHelpers } from '../utils/logger.js';
 
 // Generate or load secret key from environment (PASETO v4 requires 32 bytes)
 const SECRET_KEY_STR = process.env.PASETO_SECRET_KEY || 'your-32-character-secret-key-here12345';

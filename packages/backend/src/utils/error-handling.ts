@@ -3,6 +3,7 @@
  */
 
 import { Context } from 'hono';
+import { loggers } from './logger.js';
 
 export interface ErrorResponse {
   error: string;
@@ -102,12 +103,14 @@ export function handleError(
 ): Response {
   const requestId = c?.get('requestId') || generateRequestId();
   
-  // Log the full error for debugging
-  console.error(`[${requestId}] Error in ${context}:`, {
+  // Log the full error for debugging using structured logging
+  loggers.api.error({
+    requestId,
+    context,
     error: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
     timestamp: new Date().toISOString()
-  });
+  }, `Error in ${context}`);
 
   // Return safe error message to client
   if (error instanceof Error) {

@@ -2,6 +2,7 @@ import simpleGit, { SimpleGit } from 'simple-git';
 import path from 'path';
 import fs from 'fs/promises';
 import { SiteConfig, GitOperationResult } from './types.js';
+import { loggers, logHelpers } from '../utils/logger.js';
 
 /**
  * Git交互管理器
@@ -28,22 +29,44 @@ export class GitManager {
    * 初始化仓库：如果本地不存在则克隆，存在则拉取最新代码
    */
   async initializeRepository(siteConfig: SiteConfig): Promise<GitOperationResult> {
-    const { githubRepositoryUrl, localPath, githubPat } = siteConfig;
+    const { githubRepositoryUrl, localPath, githubPat, id } = siteConfig;
+    const startTime = Date.now();
     
     try {
+      loggers.git.info({
+        siteId: id,
+        repositoryUrl: githubRepositoryUrl,
+        localPath
+      }, `Starting repository initialization for site ${id}`);
+
       // 检查本地路径是否存在
       const exists = await this.checkLocalRepoExists(localPath);
       
       if (!exists) {
+        loggers.git.info(`Local repository not found, cloning for site ${id}`);
         // 克隆仓库
         await this.cloneRepository(siteConfig);
       } else {
+        loggers.git.info(`Local repository exists, ensuring clean state for site ${id}`);
         // 确保仓库是干净的，然后拉取最新代码
         await this.ensureCleanAndPull(siteConfig);
       }
       
+      const duration = Date.now() - startTime;
+      logHelpers.gitOperation('initialize', githubRepositoryUrl, 'main', undefined, duration, true);
+      
       return { success: true };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logHelpers.gitOperation('initialize', githubRepositoryUrl, 'main', undefined, duration, false);
+      
+      loggers.git.error({
+        siteId: id,
+        repositoryUrl: githubRepositoryUrl,
+        error: error instanceof Error ? error.message : String(error),
+        duration
+      }, `Failed to initialize repository for site ${id}`);
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : '未知错误'
@@ -55,9 +78,16 @@ export class GitManager {
    * 克隆仓库
    */
   async cloneRepository(siteConfig: SiteConfig): Promise<GitOperationResult> {
-    const { githubRepositoryUrl, localPath, githubPat } = siteConfig;
+    const { githubRepositoryUrl, localPath, githubPat, id } = siteConfig;
+    const startTime = Date.now();
     
     try {
+      loggers.git.info({
+        siteId: id,
+        repositoryUrl: githubRepositoryUrl,
+        localPath
+      }, `Starting repository clone for site ${id}`);
+
       // 确保父目录存在
       await fs.mkdir(path.dirname(localPath), { recursive: true });
       
@@ -68,8 +98,21 @@ export class GitManager {
       const git = simpleGit();
       await git.clone(authenticatedUrl, localPath, ['--branch', 'main']);
       
+      const duration = Date.now() - startTime;
+      logHelpers.gitOperation('clone', githubRepositoryUrl, 'main', undefined, duration, true);
+      
       return { success: true };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logHelpers.gitOperation('clone', githubRepositoryUrl, 'main', undefined, duration, false);
+      
+      loggers.git.error({
+        siteId: id,
+        repositoryUrl: githubRepositoryUrl,
+        error: error instanceof Error ? error.message : String(error),
+        duration
+      }, `Failed to clone repository for site ${id}`);
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : '克隆仓库失败'

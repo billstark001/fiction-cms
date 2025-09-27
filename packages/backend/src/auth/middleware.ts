@@ -3,6 +3,7 @@ import { verifyToken, TokenPayload } from './tokens.js';
 import { db } from '../db/index.js';
 import { users, userRoles, roles, rolePermissions, permissions, userSites } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { loggers, logHelpers } from '../utils/logger.js';
 
 export interface AuthenticatedUser {
   id: string;
