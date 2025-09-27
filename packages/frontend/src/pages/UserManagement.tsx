@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import { apiClient, User, Role, CreateUserRequest } from '../api/client';
+import { 
+  TableContainer, 
+  Table, 
+  TableHeader, 
+  TableBody, 
+  TableRow, 
+  TableHead, 
+  TableCell, 
+  TableEmptyState 
+} from '../components/ui';
 import * as layoutStyles from '../components/layout/Layout.css';
 import * as pageStyles from './UserManagement.css';
 import * as formStyles from '../styles/forms.css';
@@ -271,36 +281,26 @@ export default function UserManagement() {
         </div>
 
         {users.length === 0 ? (
-          <div className={tableStyles.emptyState}>
-            <h3 className={tableStyles.emptyStateTitle}>No users found</h3>
-            <p className={tableStyles.emptyStateText}>Create your first user to get started.</p>
-          </div>
+          <TableEmptyState 
+            title="No users found" 
+            description="Create your first user to get started." 
+          />
         ) : (
-          <div className={tableStyles.tableContainer}>
-            <table className={tableStyles.table}>
-              <thead className={tableStyles.thead}>
-                <tr className={tableStyles.tr}>
-                  <th className={tableStyles.th}>
-                    User
-                  </th>
-                  <th className={tableStyles.th}>
-                    Email
-                  </th>
-                  <th className={tableStyles.th}>
-                    Roles
-                  </th>
-                  <th className={tableStyles.th}>
-                    Status
-                  </th>
-                  <th className={tableStyles.th}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={tableStyles.tbody}>
+          <TableContainer>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {users.map(user => (
-                  <tr key={user.id} className={tableStyles.tr}>
-                    <td className={tableStyles.td}>
+                  <TableRow key={user.id} hoverable>
+                    <TableCell>
                       <div className={tableStyles.cellContent}>
                         <div className={tableStyles.cellPrimary}>
                           {user.displayName || user.username}
@@ -309,11 +309,11 @@ export default function UserManagement() {
                           @{user.username}
                         </div>
                       </div>
-                    </td>
-                    <td className={tableStyles.tdWithText}>
+                    </TableCell>
+                    <TableCell withText>
                       {user.email}
-                    </td>
-                    <td className={tableStyles.td}>
+                    </TableCell>
+                    <TableCell>
                       <div className={pageStyles.roleTagsContainer}>
                         {user.roles.map(role => (
                           <span key={role} className={tableStyles.badgeBlue}>
@@ -321,13 +321,13 @@ export default function UserManagement() {
                           </span>
                         ))}
                       </div>
-                    </td>
-                    <td className={tableStyles.td}>
+                    </TableCell>
+                    <TableCell>
                       <span className={user.isActive ? pageStyles.userStatusActive : pageStyles.userStatusInactive}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
-                    </td>
-                    <td className={tableStyles.td}>
+                    </TableCell>
+                    <TableCell>
                       <div className={pageStyles.userTableActions}>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
@@ -336,12 +336,12 @@ export default function UserManagement() {
                           Delete
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </div>
     </Layout>
