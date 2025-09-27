@@ -41,18 +41,21 @@ Fiction CMS 遵循现代全栈架构：
 ### 安装
 
 1. **克隆仓库**
+
 ```bash
 git clone https://github.com/billstark001/fiction-cms.git
 cd fiction-cms
 ```
 
 2. **安装依赖**
+
 ```bash
 pnpm install
 # 或 npm install
 ```
 
 3. **配置环境变量**
+
 ```bash
 # 后端配置（在 packages/backend/ 目录下创建 .env 文件）
 DATABASE_PATH=./fiction-cms.db
@@ -66,11 +69,12 @@ GITHUB_PAT=your_github_personal_access_token
 ```
 
 4. **启动开发服务器**
+
 ```bash
 pnpm dev
 ```
 
-这将同时启动后端 API 服务器（http://localhost:3001）和前端开发服务器（http://localhost:3000）。
+这将同时启动后端 API 服务器（<http://localhost:3001）和前端开发服务器（http://localhost:3000）。>
 
 ### 默认访问
 
@@ -107,17 +111,20 @@ fiction-cms/
 在 [docs](./docs/) 目录中提供了完整的文档：
 
 ### 用户文档
+
 - **[用户指南](./docs/user-guide_zh.md)** - 内容管理员完整指南
 - **[站点管理](./docs/site-management_zh.md)** - 多站点管理
 - **[内容编辑](./docs/content-editing_zh.md)** - 处理不同文件类型
 
 ### 维护者和开发者文档
+
 - **[架构概览](./docs/architecture_zh.md)** - 系统架构和设计决策
 - **[API 文档](./docs/api_zh.md)** - 完整的 API 参考
 - **[开发环境设置](./docs/development_zh.md)** - 设置开发环境
 - **[部署指南](./docs/deployment_zh.md)** - 生产环境部署说明
 
 ### 技术参考
+
 - **[引擎文档](./packages/backend/src/engine/README.md)** - CMS 引擎集成指南
 - **[配置指南](./docs/configuration_zh.md)** - 环境和站点配置
 - **[安全指南](./docs/security_zh.md)** - 安全注意事项和最佳实践
@@ -127,6 +134,7 @@ fiction-cms/
 ### 开发工作流
 
 1. **开发服务器**
+
 ```bash
 pnpm dev              # 启动前端和后端
 pnpm --filter backend dev   # 仅后端
@@ -134,6 +142,7 @@ pnpm --filter frontend dev  # 仅前端
 ```
 
 2. **生产构建**
+
 ```bash
 pnpm build            # 构建所有包
 pnpm --filter backend build # 仅后端
@@ -141,6 +150,7 @@ pnpm --filter frontend build # 仅前端
 ```
 
 3. **代码质量**
+
 ```bash
 pnpm lint             # 检查所有包
 pnpm type-check       # TypeScript 类型检查
@@ -178,6 +188,7 @@ Fiction CMS 适用于：
 ## 技术栈
 
 ### 前端
+
 - **React 18** - 现代 React 与钩子
 - **TypeScript** - 类型安全的 JavaScript
 - **Vite** - 快速构建工具和开发服务器
@@ -185,6 +196,7 @@ Fiction CMS 适用于：
 - **Monaco Editor** - VS Code 风格的编辑体验
 
 ### 后端
+
 - **Hono.js** - 快速、轻量级的 Web 框架
 - **TypeScript** - 端到端类型安全
 - **Drizzle ORM** - 类型安全的数据库操作
@@ -192,6 +204,7 @@ Fiction CMS 适用于：
 - **PASETO** - 安全的基于令牌的身份验证
 
 ### DevOps 和工具
+
 - **pnpm** - 快速、节省磁盘空间的包管理器
 - **ESLint** - 代码检查和格式化
 - **Prettier** - 代码格式化

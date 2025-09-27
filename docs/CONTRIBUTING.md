@@ -39,6 +39,7 @@ Before contributing, ensure you have:
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/fiction-cms.git
    cd fiction-cms
@@ -46,11 +47,13 @@ Before contributing, ensure you have:
    ```
 
 3. **Install dependencies**:
+
    ```bash
    pnpm install
    ```
 
 4. **Set up development environment**:
+
    ```bash
    # Create backend environment file
    cp packages/backend/.env.example packages/backend/.env
@@ -58,6 +61,7 @@ Before contributing, ensure you have:
    ```
 
 5. **Start development servers**:
+
    ```bash
    pnpm dev
    ```
@@ -78,6 +82,7 @@ Before contributing, ensure you have:
 1. **Check existing issues** before starting work
 2. **Comment on the issue** to indicate you're working on it
 3. **Create a branch** from main:
+
    ```bash
    git checkout main
    git pull upstream main
@@ -107,11 +112,13 @@ git rebase main
 ### Bug Reports
 
 **Before reporting a bug:**
+
 - Check if the issue already exists
 - Try to reproduce it on the latest version
 - Gather relevant system information
 
 **Good bug report includes:**
+
 - Clear, descriptive title
 - Steps to reproduce the issue
 - Expected vs. actual behavior
@@ -120,6 +127,7 @@ git rebase main
 - Screenshots if applicable
 
 **Bug Report Template:**
+
 ```markdown
 ## Bug Description
 Brief description of the bug
@@ -148,11 +156,13 @@ Any additional information, logs, or screenshots
 ### Feature Requests
 
 **Before requesting a feature:**
+
 - Check if it's already been requested
 - Consider if it fits the project's scope
 - Think about implementation complexity
 
 **Good feature request includes:**
+
 - Clear problem statement
 - Proposed solution
 - Alternative solutions considered
@@ -172,6 +182,7 @@ Documentation contributions are highly valued:
 ### Code Contributions
 
 Code contributions should:
+
 - **Solve a real problem**
 - **Follow project conventions**
 - **Include appropriate tests**
@@ -183,6 +194,7 @@ Code contributions should:
 ### TypeScript Guidelines
 
 **Type Safety:**
+
 ```typescript
 // Good: Explicit types
 interface User {
@@ -205,6 +217,7 @@ const userData: User = getUserData();
 ```
 
 **Function Declarations:**
+
 ```typescript
 // Good: Explicit return types for exported functions
 export function createUser(userData: CreateUserRequest): Promise<User> {
@@ -220,12 +233,14 @@ const users = await Promise.all(
 ### Code Style
 
 **Formatting:**
+
 - Use **Prettier** for consistent formatting
 - **2 spaces** for indentation
 - **Single quotes** for strings
 - **Trailing commas** in multi-line structures
 
 **Naming Conventions:**
+
 ```typescript
 // Variables and functions: camelCase
 const userName = 'john_doe';
@@ -244,6 +259,7 @@ interface ApiResponse {}
 ```
 
 **Error Handling:**
+
 ```typescript
 // Good: Specific error types
 class ValidationError extends Error {
@@ -273,6 +289,7 @@ async function processFile(path: string): Promise<Result<string>> {
 ### React/Frontend Guidelines
 
 **Component Structure:**
+
 ```typescript
 // Good: Functional component with proper typing
 interface UserCardProps {
@@ -297,6 +314,7 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onEdit }) => {
 ```
 
 **Custom Hooks:**
+
 ```typescript
 // Good: Custom hook with proper typing
 interface UseApiOptions {
@@ -320,6 +338,7 @@ function useApi<T>(
 ### Backend/API Guidelines
 
 **Route Handlers:**
+
 ```typescript
 // Good: Structured route handler
 export const getUserById = async (c: Context) => {
@@ -345,6 +364,7 @@ export const getUserById = async (c: Context) => {
 ```
 
 **Service Layer:**
+
 ```typescript
 // Good: Service with proper error handling
 class UserService {
@@ -375,6 +395,7 @@ class UserService {
 ### Test Structure
 
 **Unit Tests:**
+
 ```typescript
 // Good: Descriptive test structure
 describe('UserService', () => {
@@ -407,6 +428,7 @@ describe('UserService', () => {
 ```
 
 **Integration Tests:**
+
 ```typescript
 describe('User API', () => {
   it('should create user with valid data', async () => {
@@ -444,6 +466,7 @@ describe('User API', () => {
 ### Writing Documentation
 
 **Documentation should be:**
+
 - **Clear and concise**
 - **Well-organized** with proper headings
 - **Include examples** where appropriate
@@ -451,6 +474,7 @@ describe('User API', () => {
 - **Accessible** to different skill levels
 
 **Code Documentation:**
+
 ```typescript
 /**
  * Validates and processes a file upload operation.
@@ -496,6 +520,7 @@ When adding new API endpoints:
 ### Before Submitting
 
 **Checklist:**
+
 - [ ] Code follows project style guidelines
 - [ ] Tests pass locally (`pnpm test`)
 - [ ] Linting passes (`pnpm lint`)
@@ -532,6 +557,7 @@ Brief description of the changes
 ### Review Process
 
 **What reviewers look for:**
+
 - Code quality and style consistency
 - Test coverage and quality
 - Performance implications
@@ -540,6 +566,7 @@ Brief description of the changes
 - Backward compatibility
 
 **As a contributor:**
+
 - **Be responsive** to review feedback
 - **Ask questions** if feedback is unclear
 - **Make requested changes** promptly
@@ -589,6 +616,7 @@ Fiction CMS follows [Semantic Versioning](https://semver.org/):
 ### Recognition
 
 Contributors are recognized through:
+
 - **Contributors list** in README
 - **Release notes** acknowledgments
 - **GitHub contributor insights**

@@ -14,11 +14,13 @@ This guide provides comprehensive instructions for setting up a development envi
 ### Tools and Software
 
 **Required:**
+
 - **Code Editor**: VS Code (recommended) with TypeScript extensions
 - **Terminal**: Modern terminal with Git bash support
 - **GitHub Account**: For repository access and testing
 
 **Recommended:**
+
 - **GitHub CLI**: For streamlined GitHub operations
 - **Docker**: For containerized development (optional)
 - **SQLite Browser**: For database inspection
@@ -80,6 +82,7 @@ cp .env.example .env
 ```
 
 **Backend Environment Variables (.env):**
+
 ```bash
 # Database Configuration
 DATABASE_PATH=./fiction-cms.db
@@ -107,6 +110,7 @@ LOG_LEVEL=debug
 ```
 
 **Frontend Environment Variables (.env in packages/frontend/):**
+
 ```bash
 # API Configuration
 VITE_API_URL=http://localhost:3001
@@ -137,9 +141,10 @@ pnpm --filter frontend dev   # Frontend only (port 3000)
 ```
 
 **Development URLs:**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- API Health Check: http://localhost:3001/api/health
+
+- Frontend: <http://localhost:3000>
+- Backend API: <http://localhost:3001>
+- API Health Check: <http://localhost:3001/api/health>
 
 ## Project Structure
 
@@ -214,6 +219,7 @@ fiction-cms/
 ### Key Directories Explained
 
 **Backend (`packages/backend/src/`):**
+
 - `routes/`: API endpoint handlers using Hono.js
 - `engine/`: Core CMS functionality (file operations, Git, deployment)
 - `auth/`: Authentication and authorization logic
@@ -222,6 +228,7 @@ fiction-cms/
 - `config/`: Environment and application configuration
 
 **Frontend (`packages/frontend/src/`):**
+
 - `components/`: Reusable React components organized by feature
 - `pages/`: Top-level page components and routing
 - `hooks/`: Custom React hooks for state management and API calls
@@ -234,11 +241,13 @@ fiction-cms/
 ### Code Standards
 
 **TypeScript Configuration:**
+
 - Strict mode enabled for type safety
 - Path aliases configured for clean imports
 - Consistent tsconfig.json across packages
 
 **ESLint Rules:**
+
 ```javascript
 // eslint.config.js (if available)
 module.exports = {
@@ -255,6 +264,7 @@ module.exports = {
 ```
 
 **Prettier Configuration:**
+
 ```json
 {
   "semi": true,
@@ -268,6 +278,7 @@ module.exports = {
 ### Git Workflow
 
 **Branch Naming:**
+
 - `feature/description` - New features
 - `fix/description` - Bug fixes  
 - `docs/description` - Documentation updates
@@ -275,6 +286,7 @@ module.exports = {
 
 **Commit Messages:**
 Follow conventional commits format:
+
 ```
 type(scope): description
 
@@ -314,6 +326,7 @@ pnpm --filter backend db:generate # Generate migrations
 ### Testing
 
 **Test Setup:**
+
 ```bash
 # Install testing dependencies (if not included)
 pnpm add -D vitest @testing-library/react jsdom
@@ -328,6 +341,7 @@ pnpm test:watch                # Watch mode for all tests
 ```
 
 **Backend Testing:**
+
 ```typescript
 // Example: src/__tests__/auth.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -353,6 +367,7 @@ describe('Authentication API', () => {
 ```
 
 **Frontend Testing:**
+
 ```typescript
 // Example: src/__tests__/components/SiteCard.test.tsx
 import { render, screen } from '@testing-library/react';
@@ -423,6 +438,7 @@ pnpm --filter backend db:studio
 ### Backend Debugging
 
 **VS Code Launch Configuration (`.vscode/launch.json`):**
+
 ```json
 {
   "version": "0.2.0",
@@ -444,6 +460,7 @@ pnpm --filter backend db:studio
 ```
 
 **Logging:**
+
 ```typescript
 import { logger } from '../utils/logger';
 
@@ -465,10 +482,12 @@ logger.error('Git operation failed', {
 ### Frontend Debugging
 
 **React Developer Tools:**
+
 - Install React DevTools browser extension
 - Use React DevTools Profiler for performance analysis
 
 **Browser Console:**
+
 ```javascript
 // Enable detailed logging in development
 localStorage.setItem('debug', 'fiction-cms:*');
@@ -502,6 +521,7 @@ window.__FICTION_CMS_DEBUG__ = {
 ### Common Development Issues
 
 **Port Already in Use:**
+
 ```bash
 # Find and kill process using port 3001
 lsof -ti:3001 | xargs kill -9
@@ -511,6 +531,7 @@ PORT=3002 pnpm --filter backend dev
 ```
 
 **Database Lock Issues:**
+
 ```bash
 # Close any open database connections
 pkill -f "fiction-cms.db"
@@ -521,6 +542,7 @@ pnpm --filter backend db:push
 ```
 
 **Node Version Issues:**
+
 ```bash
 # Use nvm to manage Node versions
 nvm use 18
@@ -528,6 +550,7 @@ nvm alias default 18
 ```
 
 **Package Installation Issues:**
+
 ```bash
 # Clear package manager cache
 pnpm store prune

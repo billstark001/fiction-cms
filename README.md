@@ -33,7 +33,7 @@ Fiction CMS follows a modern full-stack architecture:
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm (recommended) or npm
 - Git
 - GitHub Personal Access Token (for repository management)
@@ -41,18 +41,21 @@ Fiction CMS follows a modern full-stack architecture:
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/billstark001/fiction-cms.git
 cd fiction-cms
 ```
 
 2. **Install dependencies**
+
 ```bash
 pnpm install
 # or npm install
 ```
 
 3. **Configure environment variables**
+
 ```bash
 # Backend configuration (.env in packages/backend/)
 DATABASE_PATH=./fiction-cms.db
@@ -66,11 +69,12 @@ GITHUB_PAT=your_github_personal_access_token
 ```
 
 4. **Start development servers**
+
 ```bash
 pnpm dev
 ```
 
-This will start both the backend API server (http://localhost:3001) and frontend development server (http://localhost:3000).
+This will start both the backend API server (<http://localhost:3001>) and frontend development server (<http://localhost:3000>).
 
 ### Default Access
 
@@ -107,17 +111,20 @@ fiction-cms/
 Comprehensive documentation is available in the [docs](./docs/) directory:
 
 ### For Users
+
 - **[User Guide](./docs/user-guide.md)** - Complete guide for content managers
 - **[Site Management](./docs/site-management.md)** - Managing multiple sites
 - **[Content Editing](./docs/content-editing.md)** - Working with different file types
 
 ### For Maintainers & Developers  
+
 - **[Architecture Overview](./docs/architecture.md)** - System architecture and design decisions
 - **[API Documentation](./docs/api.md)** - Complete API reference
 - **[Development Setup](./docs/development.md)** - Setting up development environment
 - **[Deployment Guide](./docs/deployment.md)** - Production deployment instructions
 
 ### Technical References
+
 - **[Engine Documentation](./packages/backend/src/engine/README.md)** - CMS engine integration guide
 - **[Configuration Guide](./docs/configuration.md)** - Environment and site configuration
 - **[Security Guide](./docs/security.md)** - Security considerations and best practices
@@ -127,6 +134,7 @@ Comprehensive documentation is available in the [docs](./docs/) directory:
 ### Development Workflow
 
 1. **Development Server**
+
 ```bash
 pnpm dev              # Start both frontend and backend
 pnpm --filter backend dev   # Backend only  
@@ -134,6 +142,7 @@ pnpm --filter frontend dev  # Frontend only
 ```
 
 2. **Building for Production**  
+
 ```bash
 pnpm build            # Build both packages
 pnpm --filter backend build # Backend only
@@ -141,6 +150,7 @@ pnpm --filter frontend build # Frontend only
 ```
 
 3. **Code Quality**
+
 ```bash
 pnpm lint             # Lint all packages
 pnpm type-check       # TypeScript type checking
@@ -178,6 +188,7 @@ Fiction CMS is ideal for:
 ## Technology Stack
 
 ### Frontend
+
 - **React 18** - Modern React with hooks
 - **TypeScript** - Type-safe JavaScript
 - **Vite** - Fast build tool and development server
@@ -185,6 +196,7 @@ Fiction CMS is ideal for:
 - **Monaco Editor** - VS Code-like editing experience
 
 ### Backend  
+
 - **Hono.js** - Fast, lightweight web framework
 - **TypeScript** - End-to-end type safety
 - **Drizzle ORM** - Type-safe database operations
@@ -192,6 +204,7 @@ Fiction CMS is ideal for:
 - **PASETO** - Secure token-based authentication
 
 ### DevOps & Tools
+
 - **pnpm** - Fast, disk space efficient package manager
 - **ESLint** - Code linting and formatting
 - **Prettier** - Code formatting

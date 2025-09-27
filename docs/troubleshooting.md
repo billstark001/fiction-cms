@@ -7,6 +7,7 @@ This guide helps you diagnose and resolve common issues with Fiction CMS across 
 ### 1. Check System Health
 
 **Backend Health Check:**
+
 ```bash
 # Test if backend is running
 curl http://localhost:3001/api/health
@@ -20,6 +21,7 @@ curl http://localhost:3001/api/health
 ```
 
 **Database Connection:**
+
 ```bash
 # Check if database file exists and is accessible
 ls -la packages/backend/fiction-cms.db
@@ -29,6 +31,7 @@ sqlite3 packages/backend/fiction-cms.db ".tables"
 ```
 
 **Frontend Connectivity:**
+
 ```bash
 # Test frontend can reach backend
 curl http://localhost:3000/api/health
@@ -38,6 +41,7 @@ curl http://localhost:3000/api/health
 ### 2. Check Logs
 
 **Backend Logs:**
+
 ```bash
 # View real-time logs (PM2)
 pm2 logs fiction-cms
@@ -51,6 +55,7 @@ docker logs fiction-cms-container
 ```
 
 **Browser Console:**
+
 1. Open browser Developer Tools (F12)
 2. Check Console tab for JavaScript errors
 3. Check Network tab for failed API requests
@@ -61,12 +66,14 @@ docker logs fiction-cms-container
 ### Problem: "Invalid credentials" on login
 
 **Symptoms:**
+
 - Login form shows "Invalid credentials" error
 - User exists in database but cannot log in
 
 **Solutions:**
 
 1. **Check default credentials:**
+
 ```bash
 # Default admin credentials
 Username: admin
@@ -74,11 +81,13 @@ Password: admin123
 ```
 
 2. **Verify user in database:**
+
 ```bash
 sqlite3 fiction-cms.db "SELECT id, username, email FROM users WHERE username = 'admin';"
 ```
 
 3. **Reset admin password:**
+
 ```bash
 # Connect to database and update password hash
 sqlite3 fiction-cms.db
@@ -86,6 +95,7 @@ UPDATE users SET password_hash = '$2b$12$...' WHERE username = 'admin';
 ```
 
 4. **Check password hashing:**
+
 ```javascript
 // Verify bcrypt is working correctly
 const bcrypt = require('bcrypt');
@@ -96,6 +106,7 @@ console.log('New hash:', hash);
 ### Problem: "Token expired" or authentication loops
 
 **Symptoms:**
+
 - User gets logged out immediately after login
 - Infinite authentication redirects
 - "Token expired" errors in console
@@ -103,6 +114,7 @@ console.log('New hash:', hash);
 **Solutions:**
 
 1. **Clear browser storage:**
+
 ```javascript
 // In browser console
 localStorage.clear();
@@ -111,6 +123,7 @@ location.reload();
 ```
 
 2. **Check PASETO secret key:**
+
 ```bash
 # Ensure PASETO_SECRET_KEY is set and consistent
 echo $PASETO_SECRET_KEY
@@ -118,6 +131,7 @@ echo $PASETO_SECRET_KEY
 ```
 
 3. **Verify token expiration settings:**
+
 ```bash
 # Check token expiration times in .env
 JWT_ACCESS_EXPIRES_IN=15m
@@ -125,6 +139,7 @@ JWT_REFRESH_EXPIRES_IN=7d
 ```
 
 4. **Time synchronization:**
+
 ```bash
 # Ensure server time is correct
 date
@@ -137,6 +152,7 @@ sudo ntpdate -s time.nist.gov
 ### Problem: Cannot create new site
 
 **Symptoms:**
+
 - "Site creation failed" error
 - Git clone operations fail
 - GitHub repository access errors
@@ -149,6 +165,7 @@ sudo ntpdate -s time.nist.gov
    - Repository must be accessible with token
 
 2. **Test GitHub connectivity:**
+
 ```bash
 # Test GitHub API access
 curl -H "Authorization: token YOUR_GITHUB_PAT" https://api.github.com/user
@@ -159,6 +176,7 @@ curl -H "Authorization: token YOUR_GITHUB_PAT" \
 ```
 
 3. **Check local path permissions:**
+
 ```bash
 # Verify directory exists and is writable
 mkdir -p /var/fiction-cms/repos
@@ -167,6 +185,7 @@ chmod 755 /var/fiction-cms/repos
 ```
 
 4. **Git configuration:**
+
 ```bash
 # Set up Git identity for the system user
 git config --global user.name "Fiction CMS"
@@ -176,6 +195,7 @@ git config --global user.email "cms@your-domain.com"
 ### Problem: Git operations fail
 
 **Symptoms:**
+
 - Push/pull operations fail
 - "Git authentication failed" errors
 - Repository sync issues
@@ -183,12 +203,14 @@ git config --global user.email "cms@your-domain.com"
 **Solutions:**
 
 1. **Check Git credentials:**
+
 ```bash
 # Test Git clone manually
 git clone https://TOKEN@github.com/USERNAME/REPO.git /tmp/test-clone
 ```
 
 2. **Verify repository permissions:**
+
 ```bash
 # Check if user can write to repository
 ls -la /var/fiction-cms/repos/
@@ -196,6 +218,7 @@ ls -la /var/fiction-cms/repos/
 ```
 
 3. **Git configuration issues:**
+
 ```bash
 # Check Git configuration
 git config --list --global
@@ -203,6 +226,7 @@ git config --list --local
 ```
 
 4. **Network connectivity:**
+
 ```bash
 # Test GitHub connectivity
 ping github.com
@@ -215,6 +239,7 @@ curl -I https://github.com
 ### Problem: Files not loading in editor
 
 **Symptoms:**
+
 - File browser shows files but editor shows empty content
 - "File not found" errors
 - Permission denied errors
@@ -222,6 +247,7 @@ curl -I https://github.com
 **Solutions:**
 
 1. **Check file permissions:**
+
 ```bash
 # Verify file is readable
 ls -la /path/to/site/content/file.md
@@ -229,6 +255,7 @@ ls -la /path/to/site/content/file.md
 ```
 
 2. **Verify editable paths configuration:**
+
 ```javascript
 // Check site configuration
 console.log(siteConfig.editablePaths);
@@ -236,6 +263,7 @@ console.log(siteConfig.editablePaths);
 ```
 
 3. **File encoding issues:**
+
 ```bash
 # Check file encoding
 file /path/to/file.md
@@ -243,6 +271,7 @@ file /path/to/file.md
 ```
 
 4. **Large file handling:**
+
 ```bash
 # Check file size limits
 ls -lh /path/to/file.md
@@ -252,6 +281,7 @@ ls -lh /path/to/file.md
 ### Problem: Cannot save files
 
 **Symptoms:**
+
 - "Save failed" errors
 - Files appear to save but changes don't persist
 - Git commit failures
@@ -259,6 +289,7 @@ ls -lh /path/to/file.md
 **Solutions:**
 
 1. **Check disk space:**
+
 ```bash
 # Check available disk space
 df -h
@@ -266,6 +297,7 @@ df -h
 ```
 
 2. **Git repository status:**
+
 ```bash
 cd /var/fiction-cms/repos/site-name
 git status
@@ -273,6 +305,7 @@ git status
 ```
 
 3. **File locks:**
+
 ```bash
 # Check for file locks
 lsof /path/to/file.md
@@ -280,6 +313,7 @@ lsof /path/to/file.md
 ```
 
 4. **Git hooks or pre-commit issues:**
+
 ```bash
 # Check Git hooks
 ls -la .git/hooks/
@@ -292,6 +326,7 @@ mv .git/hooks .git/hooks-disabled
 ### Problem: Database connection errors
 
 **Symptoms:**
+
 - "Database connection failed" errors
 - SQLite database locked errors
 - Migration failures
@@ -299,6 +334,7 @@ mv .git/hooks .git/hooks-disabled
 **Solutions:**
 
 1. **Check database file:**
+
 ```bash
 # Verify database file exists and is accessible
 ls -la fiction-cms.db
@@ -306,6 +342,7 @@ sqlite3 fiction-cms.db ".schema"
 ```
 
 2. **Database lock issues:**
+
 ```bash
 # Find processes using database
 lsof fiction-cms.db
@@ -313,6 +350,7 @@ lsof fiction-cms.db
 ```
 
 3. **Database corruption:**
+
 ```bash
 # Check database integrity
 sqlite3 fiction-cms.db "PRAGMA integrity_check;"
@@ -320,6 +358,7 @@ sqlite3 fiction-cms.db "PRAGMA integrity_check;"
 ```
 
 4. **Permissions:**
+
 ```bash
 # Fix database permissions
 chown fiction-cms:fiction-cms fiction-cms.db
@@ -329,6 +368,7 @@ chmod 640 fiction-cms.db
 ### Problem: Migration failures
 
 **Symptoms:**
+
 - "Migration failed" errors on startup
 - Database schema inconsistencies
 - Missing tables or columns
@@ -336,6 +376,7 @@ chmod 640 fiction-cms.db
 **Solutions:**
 
 1. **Backup and reset database:**
+
 ```bash
 # Backup current database
 cp fiction-cms.db fiction-cms.db.backup
@@ -346,6 +387,7 @@ rm fiction-cms.db
 ```
 
 2. **Manual migration:**
+
 ```bash
 # Run specific migration
 cd packages/backend
@@ -353,6 +395,7 @@ pnpm run db:push
 ```
 
 3. **Check migration files:**
+
 ```bash
 # Verify migration files exist
 ls -la packages/backend/src/db/migrations/
@@ -363,6 +406,7 @@ ls -la packages/backend/src/db/migrations/
 ### Problem: Slow application response
 
 **Symptoms:**
+
 - Long loading times
 - API requests timeout
 - Editor laggy or unresponsive
@@ -370,6 +414,7 @@ ls -la packages/backend/src/db/migrations/
 **Solutions:**
 
 1. **Check system resources:**
+
 ```bash
 # Check CPU and memory usage
 htop
@@ -378,12 +423,14 @@ iotop
 ```
 
 2. **Database performance:**
+
 ```bash
 # Check database size and analyze
 sqlite3 fiction-cms.db "ANALYZE; PRAGMA table_info(users);"
 ```
 
 3. **File system performance:**
+
 ```bash
 # Check file system performance
 dd if=/dev/zero of=/tmp/testfile bs=1M count=100
@@ -391,6 +438,7 @@ rm /tmp/testfile
 ```
 
 4. **Network latency:**
+
 ```bash
 # Test API response times
 curl -w "@curl-format.txt" -s -o /dev/null http://localhost:3001/api/health
@@ -399,6 +447,7 @@ curl -w "@curl-format.txt" -s -o /dev/null http://localhost:3001/api/health
 ### Problem: High memory usage
 
 **Symptoms:**
+
 - Out of memory errors
 - Application crashes
 - System becomes unresponsive
@@ -406,18 +455,21 @@ curl -w "@curl-format.txt" -s -o /dev/null http://localhost:3001/api/health
 **Solutions:**
 
 1. **Monitor memory usage:**
+
 ```bash
 # Check memory usage by process
 ps aux --sort=-%mem | head
 ```
 
 2. **Configure memory limits:**
+
 ```json
 // PM2 ecosystem.config.js
 max_memory_restart: '1G'
 ```
 
 3. **Check for memory leaks:**
+
 ```bash
 # Monitor memory over time
 watch -n 5 'ps -p $(pgrep node) -o pid,vsz,rss,comm'
@@ -428,6 +480,7 @@ watch -n 5 'ps -p $(pgrep node) -o pid,vsz,rss,comm'
 ### Problem: CORS errors
 
 **Symptoms:**
+
 - "CORS policy" errors in browser console
 - API requests blocked by browser
 - Cross-origin request failures
@@ -435,6 +488,7 @@ watch -n 5 'ps -p $(pgrep node) -o pid,vsz,rss,comm'
 **Solutions:**
 
 1. **Check CORS configuration:**
+
 ```bash
 # Verify CORS origins setting
 echo $CORS_ORIGINS
@@ -442,12 +496,14 @@ echo $CORS_ORIGINS
 ```
 
 2. **Update CORS settings:**
+
 ```javascript
 // In environment or configuration
 CORS_ORIGINS=http://localhost:3000,https://your-domain.com
 ```
 
 3. **Nginx proxy configuration:**
+
 ```nginx
 # Add CORS headers in Nginx if needed
 add_header Access-Control-Allow-Origin "https://your-domain.com";
@@ -458,6 +514,7 @@ add_header Access-Control-Allow-Headers "Authorization, Content-Type";
 ### Problem: SSL/TLS certificate issues
 
 **Symptoms:**
+
 - "Certificate not trusted" errors
 - HTTPS connection failures
 - Mixed content warnings
@@ -465,12 +522,14 @@ add_header Access-Control-Allow-Headers "Authorization, Content-Type";
 **Solutions:**
 
 1. **Check certificate validity:**
+
 ```bash
 # Check certificate expiration
 openssl x509 -in /etc/letsencrypt/live/domain/cert.pem -text -noout | grep "Not After"
 ```
 
 2. **Renew Let's Encrypt certificate:**
+
 ```bash
 sudo certbot renew --dry-run
 sudo certbot renew
@@ -478,6 +537,7 @@ sudo systemctl reload nginx
 ```
 
 3. **Check certificate chain:**
+
 ```bash
 # Test certificate chain
 openssl s_client -connect your-domain.com:443 -servername your-domain.com
@@ -488,6 +548,7 @@ openssl s_client -connect your-domain.com:443 -servername your-domain.com
 ### Problem: Container startup failures
 
 **Symptoms:**
+
 - Container exits immediately
 - "Port already in use" errors
 - Mount volume failures
@@ -495,12 +556,14 @@ openssl s_client -connect your-domain.com:443 -servername your-domain.com
 **Solutions:**
 
 1. **Check container logs:**
+
 ```bash
 docker logs fiction-cms-container
 docker-compose logs fiction-cms
 ```
 
 2. **Port conflicts:**
+
 ```bash
 # Check what's using port 3001
 netstat -tlnp | grep :3001
@@ -508,6 +571,7 @@ netstat -tlnp | grep :3001
 ```
 
 3. **Volume mount issues:**
+
 ```bash
 # Check volume permissions
 ls -la /path/to/mounted/volume
@@ -516,6 +580,7 @@ sudo chown -R 1001:1001 /path/to/volume
 ```
 
 4. **Environment variable issues:**
+
 ```bash
 # Check environment variables in container
 docker exec fiction-cms-container env | grep PASETO
@@ -526,6 +591,7 @@ docker exec fiction-cms-container env | grep PASETO
 ### Problem: Hot reload not working
 
 **Symptoms:**
+
 - Changes not reflected in browser
 - Development server not restarting
 - TypeScript compilation errors
@@ -533,6 +599,7 @@ docker exec fiction-cms-container env | grep PASETO
 **Solutions:**
 
 1. **Check development server:**
+
 ```bash
 # Ensure development servers are running
 pnpm --filter frontend dev
@@ -540,6 +607,7 @@ pnpm --filter backend dev
 ```
 
 2. **Clear build cache:**
+
 ```bash
 # Clear Vite cache
 rm -rf packages/frontend/.vite
@@ -548,6 +616,7 @@ rm -rf packages/*/tsconfig.tsbuildinfo
 ```
 
 3. **Check file watchers:**
+
 ```bash
 # Increase file watcher limit (Linux)
 echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
@@ -557,6 +626,7 @@ sudo sysctl -p
 ### Problem: TypeScript compilation errors
 
 **Symptoms:**
+
 - Build failures
 - Type checking errors
 - Import resolution issues
@@ -564,18 +634,21 @@ sudo sysctl -p
 **Solutions:**
 
 1. **Update dependencies:**
+
 ```bash
 pnpm update
 pnpm install
 ```
 
 2. **Check TypeScript configuration:**
+
 ```bash
 # Validate tsconfig.json
 npx tsc --noEmit
 ```
 
 3. **Clear and rebuild:**
+
 ```bash
 rm -rf node_modules packages/*/node_modules
 rm -rf packages/*/dist
@@ -628,6 +701,7 @@ sqlite3 fiction-cms.db ".tables" >> diagnostic.txt
 ### Professional Support
 
 For production deployments or complex issues:
+
 - Consider professional consulting services
 - Implement monitoring and alerting solutions
 - Set up automated backup and recovery procedures

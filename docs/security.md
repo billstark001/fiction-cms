@@ -9,6 +9,7 @@ This guide provides comprehensive security recommendations for Fiction CMS deplo
 Fiction CMS uses PASETO v4 (Platform-Agnostic Security Tokens) for authentication, which provides several security advantages over JWT:
 
 **Key Generation:**
+
 ```bash
 # Generate a cryptographically secure 64-character hex key
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -23,6 +24,7 @@ console.log(key.toString('hex'));
 ```
 
 **PASETO Security Features:**
+
 - Ed25519 signatures for authenticity
 - XChaCha20-Poly1305 encryption for local tokens
 - Built-in protection against algorithm confusion attacks
@@ -31,6 +33,7 @@ console.log(key.toString('hex'));
 ### Password Security
 
 **Password Policy Requirements:**
+
 ```typescript
 interface PasswordPolicy {
   minLength: 12;
@@ -44,6 +47,7 @@ interface PasswordPolicy {
 ```
 
 **bcrypt Configuration:**
+
 ```javascript
 // Use high salt rounds for production
 const SALT_ROUNDS = 12; // Minimum recommended
@@ -53,6 +57,7 @@ const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 ```
 
 **Password Reset Security:**
+
 ```typescript
 interface PasswordResetSecurity {
   tokenExpiry: '15 minutes';
@@ -134,6 +139,7 @@ interface SiteAccessControl {
 ### Permission Validation
 
 **Server-side Permission Checks:**
+
 ```typescript
 // Middleware for route protection
 async function requirePermission(permission: string) {
@@ -164,6 +170,7 @@ app.put('/api/sites/:siteId/files/*', requirePermission('content:write'), update
 ### File System Security
 
 **Path Traversal Prevention:**
+
 ```typescript
 function validateFilePath(sitePath: string, requestedPath: string): boolean {
   // Resolve absolute path
@@ -189,6 +196,7 @@ function validateFilePath(sitePath: string, requestedPath: string): boolean {
 ```
 
 **File Type Validation:**
+
 ```typescript
 const ALLOWED_FILE_EXTENSIONS = [
   '.md', '.mdx',        // Markdown files
@@ -220,6 +228,7 @@ function validateFileExtension(filename: string): boolean {
 ```
 
 **File Size Limits:**
+
 ```typescript
 const FILE_SIZE_LIMITS = {
   '.md': 5 * 1024 * 1024,      // 5MB for Markdown
@@ -243,6 +252,7 @@ function validateFileSize(filename: string, size: number): boolean {
 ### Database Security
 
 **SQL Injection Prevention:**
+
 ```typescript
 // Use parameterized queries with Drizzle ORM
 import { eq } from 'drizzle-orm';
@@ -255,6 +265,7 @@ const user = await db.select().from(users).where(eq(users.id, userId));
 ```
 
 **Database Encryption:**
+
 ```typescript
 // Encrypt sensitive data before storage
 import crypto from 'crypto';
@@ -279,6 +290,7 @@ function decryptSensitiveData(encryptedData: string): string {
 ### Git Repository Security
 
 **GitHub Token Security:**
+
 ```typescript
 interface GitHubTokenSecurity {
   scope: 'repo';              // Minimal required scope
@@ -302,6 +314,7 @@ async function validateGitHubToken(token: string): Promise<boolean> {
 ```
 
 **Git Commit Security:**
+
 ```typescript
 // Sanitize commit messages
 function sanitizeCommitMessage(message: string): string {
@@ -327,6 +340,7 @@ function validateGitAuthor(name: string, email: string): boolean {
 ### HTTPS Configuration
 
 **SSL/TLS Best Practices:**
+
 ```nginx
 # Nginx SSL configuration
 server {
@@ -353,6 +367,7 @@ server {
 ### Security Headers
 
 **Critical Security Headers:**
+
 ```typescript
 // Security middleware
 function securityHeaders() {
@@ -393,6 +408,7 @@ function securityHeaders() {
 ### CORS Configuration
 
 **Secure CORS Setup:**
+
 ```typescript
 const corsConfig = {
   origin: (origin: string) => {
@@ -415,6 +431,7 @@ const corsConfig = {
 ### API Rate Limiting
 
 **Implementation:**
+
 ```typescript
 interface RateLimitConfig {
   windowMs: 15 * 60 * 1000;  // 15 minutes
@@ -445,6 +462,7 @@ const rateLimiter = rateLimit({
 ### Brute Force Protection
 
 **Login Protection:**
+
 ```typescript
 interface BruteForceProtection {
   maxAttempts: 5;
@@ -491,6 +509,7 @@ class LoginAttemptTracker {
 ### Request Validation
 
 **Using Zod for validation:**
+
 ```typescript
 import { z } from 'zod';
 
@@ -531,6 +550,7 @@ app.post('/api/sites', async (c) => {
 ### Content Sanitization
 
 **HTML/Markdown Sanitization:**
+
 ```typescript
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -560,6 +580,7 @@ function sanitizeMarkdown(content: string): string {
 ### Security Event Logging
 
 **Critical Events to Log:**
+
 ```typescript
 interface SecurityEvent {
   timestamp: Date;
@@ -602,6 +623,7 @@ class SecurityLogger {
 ### Monitoring and Alerting
 
 **Key Metrics to Monitor:**
+
 ```typescript
 interface SecurityMetrics {
   // Authentication metrics
@@ -633,6 +655,7 @@ interface SecurityMetrics {
 ### Security Incident Checklist
 
 **Immediate Response:**
+
 1. **Isolate the system** if actively under attack
 2. **Document the incident** with timestamps and evidence
 3. **Preserve logs** and system state for analysis
@@ -640,6 +663,7 @@ interface SecurityMetrics {
 5. **Assess the scope** of potential data exposure
 
 **Investigation Steps:**
+
 1. **Analyze logs** for attack patterns and entry points
 2. **Check for data exfiltration** or unauthorized changes
 3. **Identify compromised accounts** and reset credentials
@@ -647,6 +671,7 @@ interface SecurityMetrics {
 5. **Document findings** and attack vectors
 
 **Recovery Actions:**
+
 1. **Patch vulnerabilities** that enabled the attack
 2. **Reset compromised credentials** and tokens
 3. **Restore from clean backups** if necessary
@@ -656,6 +681,7 @@ interface SecurityMetrics {
 ### Backup and Recovery
 
 **Security-focused Backup Strategy:**
+
 ```bash
 #!/bin/bash
 # Secure backup script

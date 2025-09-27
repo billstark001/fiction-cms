@@ -5,12 +5,14 @@ Welcome to the comprehensive documentation for Fiction CMS - a modern, git-nativ
 ## Documentation Structure
 
 ### For Users
+
 - **[User Guide](./user-guide.md)** - Complete guide for content managers and editors
 - **[Site Management](./site-management.md)** - Managing multiple sites through the CMS
 - **[Content Editing](./content-editing.md)** - Working with Markdown, JSON, and SQLite files
 - **[Getting Started](./getting-started.md)** - Quick start guide for new users
 
 ### For Maintainers & Developers
+
 - **[Architecture Overview](./architecture.md)** - System architecture and design decisions
 - **[API Documentation](./api.md)** - Complete REST API reference
 - **[Development Setup](./development.md)** - Setting up development environment
@@ -18,6 +20,7 @@ Welcome to the comprehensive documentation for Fiction CMS - a modern, git-nativ
 - **[Contributing Guide](./CONTRIBUTING.md)** - Guidelines for contributors
 
 ### Technical References
+
 - **[Configuration Guide](./configuration.md)** - Environment and site configuration
 - **[Security Guide](./security.md)** - Security considerations and best practices
 - **[Troubleshooting](./troubleshooting.md)** - Common issues and solutions
@@ -33,15 +36,19 @@ All documentation is available in both English and Chinese:
 ## Quick Navigation
 
 ### I'm a Content Manager
+
 Start with the [User Guide](./user-guide.md) to learn how to manage content and sites.
 
 ### I'm a Developer/Maintainer
+
 Begin with the [Architecture Overview](./architecture.md) and [Development Setup](./development.md).
 
 ### I'm Deploying to Production
+
 Follow the [Deployment Guide](./deployment.md) and review the [Security Guide](./security.md).
 
 ### I Need API Information
+
 Refer to the [API Documentation](./api.md) for complete endpoint details.
 
 ## Additional Resources

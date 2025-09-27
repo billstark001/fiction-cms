@@ -5,6 +5,7 @@ This document provides comprehensive reference for Fiction CMS REST API endpoint
 ## Base URL
 
 All API endpoints are relative to the base URL:
+
 ```
 http://localhost:3001/api  # Development
 https://your-cms-domain.com/api  # Production
@@ -31,6 +32,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -50,6 +52,7 @@ Content-Type: application/json
 ### Authentication (`/api/auth`)
 
 #### Login
+
 ```http
 POST /api/auth/login
 Content-Type: application/json
@@ -61,6 +64,7 @@ Content-Type: application/json
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -76,12 +80,14 @@ Content-Type: application/json
 ```
 
 #### Logout
+
 ```http
 POST /api/auth/logout
 Authorization: Bearer <token>
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -90,12 +96,14 @@ Authorization: Bearer <token>
 ```
 
 #### Refresh Token
+
 ```http
 POST /api/auth/refresh
 Authorization: Bearer <token>
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -107,17 +115,20 @@ Authorization: Bearer <token>
 ### User Management (`/api/users`)
 
 #### List Users
+
 ```http
 GET /api/users
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)  
 - `limit` (optional): Items per page (default: 20)
 - `search` (optional): Search users by username/email
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -141,12 +152,14 @@ Authorization: Bearer <token>
 ```
 
 #### Get User Details  
+
 ```http
 GET /api/users/{userId}
 Authorization: Bearer <token>
 ```
 
 #### Create User
+
 ```http
 POST /api/users
 Authorization: Bearer <token>
@@ -161,6 +174,7 @@ Content-Type: application/json
 ```
 
 #### Update User
+
 ```http
 PUT /api/users/{userId}
 Authorization: Bearer <token>
@@ -174,6 +188,7 @@ Content-Type: application/json
 ```
 
 #### Delete User
+
 ```http
 DELETE /api/users/{userId}
 Authorization: Bearer <token>
@@ -182,17 +197,20 @@ Authorization: Bearer <token>
 ### Site Management (`/api/sites`)
 
 #### List Sites
+
 ```http
 GET /api/sites
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `page` (optional): Page number
 - `limit` (optional): Items per page
 - `search` (optional): Search sites by name/URL
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -220,12 +238,14 @@ Authorization: Bearer <token>
 ```
 
 #### Get Site Details
+
 ```http
 GET /api/sites/{siteId}
 Authorization: Bearer <token>
 ```
 
 #### Create Site
+
 ```http
 POST /api/sites
 Authorization: Bearer <token>
@@ -255,6 +275,7 @@ Content-Type: application/json
 ```
 
 #### Update Site
+
 ```http
 PUT /api/sites/{siteId}
 Authorization: Bearer <token>
@@ -268,6 +289,7 @@ Content-Type: application/json
 ```
 
 #### Delete Site
+
 ```http
 DELETE /api/sites/{siteId}
 Authorization: Bearer <token>
@@ -276,16 +298,19 @@ Authorization: Bearer <token>
 ### Content Management (`/api/engine/sites/{siteId}`)
 
 #### List Files
+
 ```http
 GET /api/engine/sites/{siteId}/files
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `path` (optional): Directory path to list (default: "/")
 - `type` (optional): Filter by file type (`markdown`, `json`, `sqlite`, `asset`)
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -311,17 +336,20 @@ Authorization: Bearer <token>
 ```
 
 #### Get File Content
+
 ```http
 GET /api/engine/sites/{siteId}/files/*
 Authorization: Bearer <token>
 ```
 
 **Example:**
+
 ```http
 GET /api/engine/sites/1/files/content/index.md
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -334,6 +362,7 @@ GET /api/engine/sites/1/files/content/index.md
 ```
 
 #### Update File Content
+
 ```http
 PUT /api/engine/sites/{siteId}/files/*
 Authorization: Bearer <token>
@@ -346,6 +375,7 @@ Content-Type: application/json
 ```
 
 #### Create File
+
 ```http
 POST /api/engine/sites/{siteId}/files
 Authorization: Bearer <token>
@@ -359,6 +389,7 @@ Content-Type: application/json
 ```
 
 #### Delete File
+
 ```http
 DELETE /api/engine/sites/{siteId}/files/*
 Authorization: Bearer <token>
@@ -372,12 +403,14 @@ Content-Type: application/json
 ### SQLite Database Management
 
 #### Get Tables
+
 ```http
 GET /api/engine/sites/{siteId}/sqlite/{database}/tables
 Authorization: Bearer <token>
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -411,18 +444,21 @@ Authorization: Bearer <token>
 ```
 
 #### Get Table Data
+
 ```http
 GET /api/engine/sites/{siteId}/sqlite/{database}/tables/{table}
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `page` (optional): Page number
 - `limit` (optional): Rows per page
 - `orderBy` (optional): Column to sort by
 - `order` (optional): Sort direction (`asc` or `desc`)
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -446,6 +482,7 @@ Authorization: Bearer <token>
 ```
 
 #### Insert Table Row
+
 ```http
 POST /api/engine/sites/{siteId}/sqlite/{database}/tables/{table}/rows
 Authorization: Bearer <token>
@@ -462,6 +499,7 @@ Content-Type: application/json
 ```
 
 #### Update Table Row
+
 ```http
 PUT /api/engine/sites/{siteId}/sqlite/{database}/tables/{table}/rows/{rowId}
 Authorization: Bearer <token>
@@ -477,6 +515,7 @@ Content-Type: application/json
 ```
 
 #### Delete Table Row
+
 ```http
 DELETE /api/engine/sites/{siteId}/sqlite/{database}/tables/{table}/rows/{rowId}
 Authorization: Bearer <token>
@@ -490,11 +529,13 @@ Content-Type: application/json
 ### System Information (`/api`)
 
 #### Health Check
+
 ```http
 GET /api/health
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "status": "healthy",
@@ -505,12 +546,14 @@ GET /api/health
 ```
 
 #### System Information
+
 ```http
 GET /api/system/info
 Authorization: Bearer <token>
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -533,12 +576,14 @@ Authorization: Bearer <token>
 ```
 
 #### List All Permissions
+
 ```http
 GET /api/permissions
 Authorization: Bearer <token>
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -614,6 +659,7 @@ API endpoints are rate limited to prevent abuse:
 - **File operations**: 30 requests per minute per authenticated user
 
 Rate limit headers are included in all responses:
+
 ```http
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -623,6 +669,7 @@ X-RateLimit-Reset: 1640995200
 ## Webhooks (Future Feature)
 
 Planned webhook support for:
+
 - File change notifications
 - Site deployment status
 - User activity events

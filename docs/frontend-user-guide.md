@@ -5,11 +5,13 @@ This guide explains how to use the comprehensive site management features implem
 ## Authentication
 
 The application now properly handles authentication tokens with the following fixes:
+
 - Fixed localStorage token storage bug that was saving `undefined`
 - Added safe localStorage access for SSR compatibility
 - Improved token persistence across browser sessions
 
 **Default Admin Credentials:**
+
 - Username: `admin`
 - Password: `admin123`
 
@@ -20,6 +22,7 @@ The application now properly handles authentication tokens with the following fi
 Navigate to `/sites` to access the main site management interface.
 
 **Features:**
+
 - **Search Sites**: Use the search bar to find sites by name, repository URL, or local path
 - **Pagination**: Navigate through multiple pages of sites
 - **Site Cards**: Each site shows:
@@ -35,11 +38,13 @@ Navigate to `/sites` to access the main site management interface.
 Click "Create New Site" button (admin only) or navigate to `/sites/create`.
 
 **Required Fields:**
+
 - **Site Name**: Unique identifier for your site
 - **GitHub Repository URL**: Full HTTPS URL to your GitHub repository
 - **Local Path**: Server path where the site files are stored
 
 **Optional Configuration:**
+
 - **Description**: Brief description of the site
 - **GitHub Personal Access Token**: Required for private repos or push access
 - **Build Command**: Command to build the site (e.g., `npm run build`)
@@ -51,10 +56,12 @@ Click "Create New Site" button (admin only) or navigate to `/sites/create`.
 Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 
 **Layout:**
+
 - **Left Panel**: File browser with search and filtering
 - **Right Panel**: Advanced code editor with multiple modes
 
 #### File Browser Features
+
 - **Search Files**: Filter files by name
 - **Type Filtering**: Show only specific file types (Markdown, JSON, SQLite, Assets)
 - **File Icons**: Visual indicators for different file types
@@ -64,6 +71,7 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 ## Advanced Editor Features
 
 ### Markdown Editor
+
 - **Dual Mode**: Switch between "Edit" and "Preview" modes
 - **Live Preview**: Real-time rendering of Markdown content
 - **Styled Output**: Professional formatting with:
@@ -74,6 +82,7 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
   - Inline and block code styling
 
 ### JSON Editor
+
 - **Dual Mode**: Visual editor (coming soon) and text editor
 - **Format Support**: Standard JSON and JSON5 (extended JSON syntax)
 - **Real-time Validation**: Immediate feedback on syntax errors
@@ -81,6 +90,7 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 - **Formatting**: Automatic code formatting and indentation
 
 ### Generic Code Editor
+
 - **Syntax Highlighting**: Supports multiple languages:
   - JavaScript/TypeScript
   - HTML/CSS
@@ -98,12 +108,14 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 ## Editor Controls
 
 ### Save Functionality
+
 - **Auto-detection**: Shows unsaved changes indicator (●)
 - **Commit Messages**: Optional Git commit messages for each save
 - **Validation**: Prevents saving files with validation errors
 - **Real-time Status**: Shows save status and character count
 
 ### Git Integration
+
 - Each file save creates a Git commit
 - Commits are automatically pushed to the configured repository
 - Uses the authenticated user's name and email for commits
@@ -119,18 +131,21 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 ## Technical Features
 
 ### Performance
+
 - **Monaco Editor**: Professional VS Code-like editing experience
 - **Lazy Loading**: File content loaded on demand
 - **Responsive Design**: Works on desktop and tablet devices
 - **Real-time Feedback**: Immediate validation and status updates
 
 ### Security
+
 - **Authentication Required**: All routes protected
 - **Role-based Access**: Admin-only features for site creation
 - **Input Validation**: All form inputs validated
 - **Secure Token Handling**: Proper localStorage management
 
 ### User Experience
+
 - **Intuitive Navigation**: Breadcrumb-style navigation
 - **Visual Feedback**: Hover effects, loading states, error messages
 - **Keyboard Shortcuts**: Standard editor shortcuts work
@@ -146,6 +161,7 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 4. **JSON Validation**: Switch between JSON and JSON5 modes if strict JSON fails
 
 ### Browser Compatibility
+
 - Modern browsers with ES6+ support
 - Chrome, Firefox, Safari, Edge (latest versions)
 - Mobile browsers (limited functionality on small screens)
@@ -153,6 +169,7 @@ Click "Manage" on any site or navigate to `/sites/{siteId}/manage`.
 ## Future Enhancements
 
 The following features are planned for future releases:
+
 - Visual JSON editor with form-based editing
 - SQLite database table management interface
 - File upload and asset management
@@ -165,6 +182,7 @@ The following features are planned for future releases:
 ## Support
 
 For issues or questions about the site management features:
+
 1. Check the browser console for detailed error messages
 2. Verify your authentication and permissions
 3. Ensure the backend server is running and accessible

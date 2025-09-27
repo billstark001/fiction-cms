@@ -16,12 +16,14 @@ Fiction CMS can be deployed to various platforms depending on your requirements:
 ### System Requirements
 
 **Minimum Requirements:**
+
 - **CPU**: 1 vCPU
 - **RAM**: 1GB RAM  
 - **Storage**: 10GB SSD
 - **Network**: Stable internet connection
 
 **Recommended for Production:**
+
 - **CPU**: 2+ vCPU
 - **RAM**: 2GB+ RAM
 - **Storage**: 20GB+ SSD with automated backups
@@ -205,6 +207,7 @@ docker-compose up -d --scale fiction-cms=2
 ### Server Setup
 
 **1. Update System:**
+
 ```bash
 # Ubuntu/Debian
 sudo apt update && sudo apt upgrade -y
@@ -214,6 +217,7 @@ sudo yum update -y
 ```
 
 **2. Install Node.js:**
+
 ```bash
 # Using NodeSource repository
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -224,6 +228,7 @@ sudo npm install -g pnpm pm2
 ```
 
 **3. Create Application User:**
+
 ```bash
 # Create dedicated user
 sudo adduser fiction-cms
@@ -236,6 +241,7 @@ sudo su - fiction-cms
 ### Application Deployment
 
 **1. Clone and Build:**
+
 ```bash
 # Clone repository
 git clone https://github.com/billstark001/fiction-cms.git
@@ -255,6 +261,7 @@ sudo chown -R fiction-cms:fiction-cms /opt/fiction-cms
 ```
 
 **2. Environment Configuration:**
+
 ```bash
 # Create environment file
 sudo nano /opt/fiction-cms/.env
@@ -269,6 +276,7 @@ GITHUB_PAT=your-github-token
 ```
 
 **3. PM2 Process Management:**
+
 ```bash
 # Create PM2 ecosystem file
 cat > /opt/fiction-cms/ecosystem.config.js << EOF
@@ -310,12 +318,14 @@ pm2 startup
 ### Nginx Configuration
 
 **1. Install Nginx:**
+
 ```bash
 sudo apt install nginx -y
 sudo systemctl enable nginx
 ```
 
 **2. Configure Virtual Host:**
+
 ```bash
 # Create Nginx configuration
 sudo nano /etc/nginx/sites-available/fiction-cms
@@ -392,6 +402,7 @@ server {
 ```
 
 **3. Enable Site and SSL:**
+
 ```bash
 # Enable site
 sudo ln -s /etc/nginx/sites-available/fiction-cms /etc/nginx/sites-enabled/
@@ -413,6 +424,7 @@ sudo certbot renew --dry-run
 ### Railway Deployment
 
 **1. Prepare for Railway:**
+
 ```json
 // railway.json
 {
@@ -430,6 +442,7 @@ sudo certbot renew --dry-run
 ```
 
 **2. Environment Variables:**
+
 ```bash
 NODE_ENV=production
 PASETO_SECRET_KEY=your-secret-key
@@ -440,6 +453,7 @@ RAILWAY_STATIC_URL=https://your-app.up.railway.app
 ### Heroku Deployment
 
 **1. Create Heroku Configuration:**
+
 ```json
 // Procfile
 web: node packages/backend/dist/index.js
@@ -447,6 +461,7 @@ release: echo "Release phase completed"
 ```
 
 **2. Configure Build:**
+
 ```json
 // package.json
 {
@@ -463,6 +478,7 @@ release: echo "Release phase completed"
 ### DigitalOcean App Platform
 
 **1. App Spec Configuration:**
+
 ```yaml
 # .do/app.yaml
 name: fiction-cms
@@ -494,6 +510,7 @@ services:
 ### Kubernetes Manifests
 
 **1. Deployment:**
+
 ```yaml
 # k8s/deployment.yaml
 apiVersion: apps/v1
@@ -566,6 +583,7 @@ spec:
 ```
 
 **2. Service and Ingress:**
+
 ```yaml
 # k8s/service.yaml
 apiVersion: v1
@@ -613,6 +631,7 @@ spec:
 ### Environment Security
 
 **1. Secrets Management:**
+
 ```bash
 # Generate secure PASETO key
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -623,6 +642,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 **2. Firewall Configuration:**
+
 ```bash
 # Ubuntu UFW
 sudo ufw enable
@@ -640,6 +660,7 @@ sudo ufw allow 443   # HTTPS
 ### Database Security
 
 **1. Database Backup:**
+
 ```bash
 # Create backup script
 cat > /opt/fiction-cms/backup-db.sh << 'EOF'
@@ -660,6 +681,7 @@ echo "0 2 * * * /opt/fiction-cms/backup-db.sh" | crontab -
 ```
 
 **2. File Permissions:**
+
 ```bash
 # Secure file permissions
 chmod 600 /opt/fiction-cms/.env
@@ -672,6 +694,7 @@ chown fiction-cms:fiction-cms /opt/fiction-cms/data/fiction-cms.db
 ### Application Monitoring
 
 **1. Health Checks:**
+
 ```bash
 # Create monitoring script
 cat > /opt/fiction-cms/health-check.sh << 'EOF'
@@ -690,6 +713,7 @@ echo "*/5 * * * * /opt/fiction-cms/health-check.sh" | crontab -
 ```
 
 **2. Log Management:**
+
 ```bash
 # Configure logrotate
 sudo cat > /etc/logrotate.d/fiction-cms << 'EOF'
@@ -711,6 +735,7 @@ EOF
 ### Performance Monitoring
 
 **1. System Monitoring with htop/netdata:**
+
 ```bash
 # Install monitoring tools
 sudo apt install htop iotop -y
@@ -720,6 +745,7 @@ bash <(curl -Ss https://my-netdata.io/kickstart.sh)
 ```
 
 **2. Application Metrics:**
+
 ```javascript
 // Add to your application (optional)
 const promClient = require('prom-client');
@@ -743,6 +769,7 @@ app.get('/metrics', async (c) => {
 ### Update Process
 
 **1. Backup Before Update:**
+
 ```bash
 # Stop application
 pm2 stop fiction-cms
@@ -755,6 +782,7 @@ tar -czf /opt/fiction-cms/backups/app-backup-$(date +%Y%m%d).tar.gz /opt/fiction
 ```
 
 **2. Update Application:**
+
 ```bash
 # Pull latest code
 cd /path/to/source/fiction-cms
@@ -775,6 +803,7 @@ pm2 restart fiction-cms
 ### Rollback Process
 
 **1. Quick Rollback:**
+
 ```bash
 # Stop application
 pm2 stop fiction-cms
