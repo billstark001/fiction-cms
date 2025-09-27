@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           // If we can't get current user, clear auth state
-          apiClient.clearAccessToken();
+          apiClient.clearTokens();
           set({ 
             user: null,
             isAuthenticated: false,

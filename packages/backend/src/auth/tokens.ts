@@ -23,7 +23,7 @@ export interface TokenPayload {
   username: string;
   email: string;
   iat: number; // issued at
-  exp: number; // expires at
+  exp: string; // expires at
   type: 'access' | 'refresh';
   jti?: string; // token id for refresh tokens
   [key: string]: any; // Index signature for PASETO compatibility
@@ -45,7 +45,7 @@ export async function generateAccessToken(user: UserPayload): Promise<string> {
     username: user.username,
     email: user.email,
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (15 * 60), // 15 minutes
+    exp: new Date(Date.now() + (15 * 60 * 1000)).toISOString(), // 15 minutes
     type: 'access'
   };
 
@@ -64,7 +64,7 @@ export async function generateRefreshToken(user: UserPayload): Promise<string> {
     username: user.username,
     email: user.email,
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(expiresAt.getTime() / 1000),
+    exp: expiresAt.toISOString(),
     type: 'refresh',
     jti: tokenId
   };
@@ -91,7 +91,7 @@ export async function verifyToken(token: string): Promise<TokenPayload> {
     const payload = await V4.verify(token, publicKey) as TokenPayload;
     
     // Check if token has expired
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+    if (payload.exp && new Date(payload.exp) < new Date()) {
       throw new Error('Token has expired');
     }
 

@@ -26,6 +26,7 @@ export interface User {
   displayName?: string | null;
   isActive: boolean;
   createdAt: string;
+  lastLoginAt?: string | null;
   roles: Array<{
     id: string;
     name: string;
@@ -39,10 +40,12 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  message: string;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  }
   user: User;
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
 }
 
 export interface Site {
@@ -110,10 +113,34 @@ class ApiClient {
     }
   }
 
+  setRefreshToken(token: string) {
+    // Safely store token in localStorage if available
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('fiction_cms_refresh_token', token);
+    }
+  }
+
+  /**
+   * Get access token
+   */
+  getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
+  getAccessTokenRaw(): string | null {
+    const ret = localStorage.getItem('fiction_cms_access_token');
+    return ret === 'undefined' ? null : ret;
+  }
+
+  getRefreshTokenRaw(): string | null {
+    const ret = localStorage.getItem('fiction_cms_refresh_token');
+    return ret === 'undefined' ? null : ret;
+  }
+
   /**
    * Clear access token
    */
-  clearAccessToken() {
+  clearTokens() {
     this.accessToken = null;
     // Safely remove tokens from localStorage if available
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -128,7 +155,7 @@ class ApiClient {
   private loadTokenFromStorage() {
     // Check if localStorage is available (browser environment)
     if (typeof window !== 'undefined' && window.localStorage) {
-      const token = localStorage.getItem('fiction_cms_access_token');
+      const token = this.getAccessTokenRaw();
       // Only set token if it's not null and not 'undefined' string
       if (token && token !== 'undefined') {
         this.accessToken = token;
@@ -182,7 +209,7 @@ class ApiClient {
             return retryData;
           } else {
             // Refresh failed, clear tokens
-            this.clearAccessToken();
+            this.clearTokens();
             throw new Error('Session expired. Please login again.');
           }
         }
@@ -204,7 +231,7 @@ class ApiClient {
    */
   private async refreshAccessToken(): Promise<boolean> {
     try {
-      const refreshToken = localStorage.getItem('fiction_cms_refresh_token');
+      const refreshToken = this.getRefreshTokenRaw();
       if (!refreshToken) {
         return false;
       }
@@ -220,7 +247,7 @@ class ApiClient {
       if (response.ok) {
         const data = await response.json();
         this.setAccessToken(data.accessToken);
-        localStorage.setItem('fiction_cms_refresh_token', data.refreshToken);
+        this.setRefreshToken(data.refreshToken);
         return true;
       }
       
@@ -238,17 +265,20 @@ class ApiClient {
     });
 
     // Store tokens
-    this.setAccessToken(response.accessToken);
-    localStorage.setItem('fiction_cms_refresh_token', response.refreshToken);
+    this.setAccessToken(response.tokens.accessToken);
+    this.setRefreshToken(response.tokens.refreshToken);
 
     return response;
   }
 
   async logout(): Promise<void> {
     try {
-      await this.request('/auth/logout', { method: 'POST' });
+      const refreshToken = this.getRefreshTokenRaw();
+      if (refreshToken) {
+        await this.request('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) });
+      } // else there is no token to be revoked
     } finally {
-      this.clearAccessToken();
+      this.clearTokens();
     }
   }
 
