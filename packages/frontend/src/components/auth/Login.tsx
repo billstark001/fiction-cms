@@ -85,7 +85,7 @@ export default function Login() {
             <label htmlFor="password" className={styles.label}>
               Password
             </label>
-            <div style={{ position: 'relative' }}>
+            <div className={styles.passwordInputWrapper}>
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -100,18 +100,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '0.75rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: '#6b7280',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  padding: 0,
-                }}
+                className={styles.passwordToggleButton}
                 disabled={isLoading}
               >
                 {showPassword ? 'Hide' : 'Show'}
@@ -135,14 +124,7 @@ export default function Login() {
           </button>
         </form>
 
-        <div style={{ 
-          marginTop: '1.5rem', 
-          padding: '1rem', 
-          backgroundColor: '#f9fafb', 
-          borderRadius: '0.375rem',
-          fontSize: '0.875rem',
-          color: '#6b7280'
-        }}>
+        <div className={styles.credentialsInfo}>
           <strong>Default Admin Credentials:</strong><br />
           Username: admin<br />
           Password: admin123

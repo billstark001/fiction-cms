@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import { apiClient, User, Role, CreateUserRequest } from '../api/client';
-import * as styles from '../components/layout/Layout.css';
+import * as layoutStyles from '../components/layout/Layout.css';
+import * as pageStyles from './UserManagement.css';
+import * as formStyles from '../styles/forms.css';
+import * as tableStyles from '../styles/table.css';
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -87,7 +90,7 @@ export default function UserManagement() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ 
+        <div className={layoutStyles.pageTitle} style={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
@@ -103,14 +106,7 @@ export default function UserManagement() {
   return (
     <Layout>
       {error && (
-        <div style={{ 
-          padding: '1rem',
-          backgroundColor: '#fef2f2',
-          borderRadius: '0.375rem',
-          border: '1px solid #fecaca',
-          color: '#dc2626',
-          marginBottom: '1rem'
-        }}>
+        <div className={formStyles.errorMessage}>
           {error}
           <button 
             onClick={() => setError(null)}
@@ -129,18 +125,18 @@ export default function UserManagement() {
 
       {/* Create User Form */}
       {showCreateForm && (
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Create New User</h2>
-            <p className={styles.cardDescription}>
+        <div className={layoutStyles.card}>
+          <div className={layoutStyles.cardHeader}>
+            <h2 className={layoutStyles.cardTitle}>Create New User</h2>
+            <p className={layoutStyles.cardDescription}>
               Add a new user to the system with appropriate roles
             </p>
           </div>
 
-          <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'medium', marginBottom: '0.5rem' }}>
+          <form onSubmit={handleCreateUser} className={formStyles.form}>
+            <div className={pageStyles.userFormGrid}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Username *
                 </label>
                 <input
@@ -148,17 +144,12 @@ export default function UserManagement() {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'medium', marginBottom: '0.5rem' }}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Email *
                 </label>
                 <input
@@ -166,19 +157,14 @@ export default function UserManagement() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'medium', marginBottom: '0.5rem' }}>
+            <div className={pageStyles.userFormGrid}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Password *
                 </label>
                 <input
@@ -186,29 +172,19 @@ export default function UserManagement() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'medium', marginBottom: '0.5rem' }}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Display Name
                 </label>
                 <input
                   type="text"
                   value={formData.displayName}
                   onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
             </div>
@@ -276,25 +252,18 @@ export default function UserManagement() {
       )}
 
       {/* Users List */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className={layoutStyles.card}>
+        <div className={layoutStyles.cardHeader}>
+          <div className={pageStyles.userListHeader}>
             <div>
-              <h2 className={styles.cardTitle}>System Users</h2>
-              <p className={styles.cardDescription}>
+              <h2 className={layoutStyles.cardTitle}>System Users</h2>
+              <p className={layoutStyles.cardDescription}>
                 Manage user accounts and their permissions
               </p>
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer'
-              }}
+              className={pageStyles.createUserButton}
             >
               Add User
             </button>
@@ -302,96 +271,67 @@ export default function UserManagement() {
         </div>
 
         {users.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '3rem', 
-            color: '#6b7280' 
-          }}>
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No users found</h3>
-            <p>Create your first user to get started.</p>
+          <div className={tableStyles.emptyState}>
+            <h3 className={tableStyles.emptyStateTitle}>No users found</h3>
+            <p className={tableStyles.emptyStateText}>Create your first user to get started.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.875rem', fontWeight: 'medium', color: '#6b7280' }}>
+          <div className={tableStyles.tableContainer}>
+            <table className={tableStyles.table}>
+              <thead className={tableStyles.thead}>
+                <tr className={tableStyles.tr}>
+                  <th className={tableStyles.th}>
                     User
                   </th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.875rem', fontWeight: 'medium', color: '#6b7280' }}>
+                  <th className={tableStyles.th}>
                     Email
                   </th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.875rem', fontWeight: 'medium', color: '#6b7280' }}>
+                  <th className={tableStyles.th}>
                     Roles
                   </th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.875rem', fontWeight: 'medium', color: '#6b7280' }}>
+                  <th className={tableStyles.th}>
                     Status
                   </th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.875rem', fontWeight: 'medium', color: '#6b7280' }}>
+                  <th className={tableStyles.th}>
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={tableStyles.tbody}>
                 {users.map(user => (
-                  <tr key={user.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '0.75rem' }}>
-                      <div>
-                        <div style={{ fontWeight: 'medium', color: '#111827' }}>
+                  <tr key={user.id} className={tableStyles.tr}>
+                    <td className={tableStyles.td}>
+                      <div className={tableStyles.cellContent}>
+                        <div className={tableStyles.cellPrimary}>
                           {user.displayName || user.username}
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        <div className={tableStyles.cellSecondary}>
                           @{user.username}
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                    <td className={tableStyles.tdWithText}>
                       {user.email}
                     </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      [TODO: fetch roles properly]
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                    <td className={tableStyles.td}>
+                      <div className={pageStyles.roleTagsContainer}>
                         {user.roles.map(role => (
-                          <span
-                            key={role}
-                            style={{
-                              padding: '0.25rem 0.5rem',
-                              backgroundColor: '#eff6ff',
-                              color: '#2563eb',
-                              borderRadius: '0.25rem',
-                              fontSize: '0.75rem'
-                            }}
-                          >
+                          <span key={role} className={tableStyles.badgeBlue}>
                             {role}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <span style={{
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.75rem',
-                        fontWeight: 'medium',
-                        backgroundColor: user.isActive ? '#dcfce7' : '#fee2e2',
-                        color: user.isActive ? '#166534' : '#991b1b'
-                      }}>
+                    <td className={tableStyles.td}>
+                      <span className={user.isActive ? pageStyles.userStatusActive : pageStyles.userStatusInactive}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <td className={tableStyles.td}>
+                      <div className={pageStyles.userTableActions}>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            fontSize: '0.75rem',
-                            color: '#dc2626',
-                            backgroundColor: 'transparent',
-                            border: '1px solid #fecaca',
-                            borderRadius: '0.25rem',
-                            cursor: 'pointer'
-                          }}
+                          className={tableStyles.tableActionButtonDanger}
                         >
                           Delete
                         </button>

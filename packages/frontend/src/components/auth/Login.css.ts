@@ -105,6 +105,27 @@ export const primaryButton = style([button, {
   },
 }]);
 
+export const passwordInputWrapper = style({
+  position: 'relative',
+});
+
+export const passwordToggleButton = style({
+  position: 'absolute',
+  right: '0.75rem',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  background: 'none',
+  border: 'none',
+  color: '#6b7280',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  padding: 0,
+  
+  ':disabled': {
+    cursor: 'not-allowed',
+  },
+});
+
 export const errorMessage = style({
   padding: '0.75rem',
   backgroundColor: '#fef2f2',
@@ -134,6 +155,15 @@ export const loadingSpinner = style({
   borderRadius: '50%',
   animation: 'spin 1s linear infinite',
   marginRight: '0.5rem',
+});
+
+export const credentialsInfo = style({
+  marginTop: '1.5rem',
+  padding: '1rem',
+  backgroundColor: '#f9fafb',
+  borderRadius: '0.375rem',
+  fontSize: '0.875rem',
+  color: '#6b7280',
 });
 
 // Add keyframes for spinner animation

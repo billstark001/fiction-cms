@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import FileEditor from '../components/editor/FileEditor';
 import { apiClient } from '../api/client';
-import * as styles from '../components/layout/Layout.css';
+import * as contentStyles from './SiteContentManagement.css';
+import * as pageStyles from '../styles/pages.css';
+import * as formStyles from '../styles/forms.css';
 
 interface FileItem {
   path: string;
@@ -49,7 +51,7 @@ export default function SiteContentManagement() {
 
   const loadFiles = async () => {
     if (!siteId) return;
-    
+
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const response = await apiClient.getEditableFiles(siteId);
@@ -69,7 +71,7 @@ export default function SiteContentManagement() {
 
   const loadFileContent = async (filePath: string) => {
     if (!siteId) return;
-    
+
     try {
       setState(prev => ({ ...prev, loadingContent: true }));
       const response = await apiClient.getFileContent(siteId, filePath);
@@ -136,10 +138,10 @@ export default function SiteContentManagement() {
   if (state.loading) {
     return (
       <Layout>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           height: '200px',
           color: '#6b7280'
         }}>
@@ -151,51 +153,31 @@ export default function SiteContentManagement() {
 
   return (
     <Layout>
-      <div className={styles.header}>
+      <div className={pageStyles.header}>
         <div>
           <button
             onClick={() => navigate('/sites')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6b7280',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              padding: 0,
-              marginBottom: '0.5rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
+            className={contentStyles.backButton}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="15,18 9,12 15,6"></polyline>
             </svg>
             Back to Sites
           </button>
-          <h1 className={styles.pageTitle}>Site Content Management</h1>
-          <p className={styles.pageDescription}>
+          <h1 className={pageStyles.pageTitle}>Site Content Management</h1>
+          <p className={pageStyles.pageDescription}>
             Manage files and content for site: {siteId}
           </p>
         </div>
       </div>
 
       {state.error && (
-        <div className={styles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
+        <div className={pageStyles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
           <div style={{ color: '#dc2626', padding: '1rem', textAlign: 'center' }}>
             {state.error}
             <button
               onClick={() => setState(prev => ({ ...prev, error: null }))}
-              style={{
-                marginLeft: '1rem',
-                padding: '0.25rem 0.5rem',
-                backgroundColor: 'transparent',
-                border: '1px solid #dc2626',
-                borderRadius: '0.25rem',
-                color: '#dc2626',
-                fontSize: '0.75rem',
-                cursor: 'pointer'
-              }}
+              className={contentStyles.errorDismissButton}
             >
               Dismiss
             </button>
@@ -205,42 +187,27 @@ export default function SiteContentManagement() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', height: 'calc(100vh - 200px)' }}>
         {/* File Browser */}
-        <div className={styles.card} style={{ height: 'fit-content', maxHeight: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Files</h2>
-            <p className={styles.cardDescription}>
+        <div className={`${pageStyles.card} ${contentStyles.fileBrowserCard}`}>
+          <div className={pageStyles.cardHeader}>
+            <h2 className={pageStyles.cardTitle}>Files</h2>
+            <p className={pageStyles.cardDescription}>
               Browse and select files to edit
             </p>
           </div>
 
           {/* Search and Filter */}
-          <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+          <div className={contentStyles.searchFilterContainer}>
             <input
               type="text"
               placeholder="Search files..."
               value={state.searchQuery}
               onChange={(e) => setState(prev => ({ ...prev, searchQuery: e.target.value }))}
-              style={{
-                flex: 1,
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                outline: 'none'
-              }}
+              className={formStyles.input}
             />
             <select
               value={state.filterType}
               onChange={(e) => setState(prev => ({ ...prev, filterType: e.target.value }))}
-              style={{
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                backgroundColor: 'white',
-                outline: 'none',
-                minWidth: '100px'
-              }}
+              className={formStyles.select}
             >
               <option value="all">All Types</option>
               <option value="markdown">Markdown</option>
@@ -251,83 +218,36 @@ export default function SiteContentManagement() {
           </div>
 
           {/* File List */}
-          <div style={{ 
-            flex: 1, 
-            overflow: 'auto',
-            maxHeight: 'calc(100vh - 400px)'
-          }}>
+          <div className={contentStyles.fileList}>
             {filteredFiles.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '2rem', 
-                color: '#6b7280' 
-              }}>
+              <div className={contentStyles.fileListEmpty}>
                 <p>No files found</p>
                 {state.searchQuery && (
                   <button
                     onClick={() => setState(prev => ({ ...prev, searchQuery: '', filterType: 'all' }))}
-                    style={{
-                      marginTop: '0.5rem',
-                      padding: '0.25rem 0.5rem',
-                      backgroundColor: '#2563eb',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.25rem',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer'
-                    }}
+                    className={formStyles.secondaryButton}
                   >
                     Clear filters
                   </button>
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div className={contentStyles.fileList}>
                 {filteredFiles.map(file => (
                   <div
                     key={file.path}
                     onClick={() => loadFileContent(file.path)}
-                    style={{
-                      padding: '0.75rem',
-                      borderRadius: '0.375rem',
-                      cursor: 'pointer',
-                      backgroundColor: state.selectedFile === file.path ? '#eff6ff' : 'transparent',
-                      borderLeft: state.selectedFile === file.path ? '3px solid #2563eb' : '3px solid transparent',
-                      transition: 'all 0.15s ease-in-out',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (state.selectedFile !== file.path) {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (state.selectedFile !== file.path) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
+                    className={`${contentStyles.fileItem} ${state.selectedFile === file.path ? contentStyles.fileItemSelected : ''
+                      }`}
                   >
-                    <span style={{ fontSize: '1.25rem' }}>
+                    <span className={contentStyles.fileIcon}>
                       {getFileIcon(file.type)}
                     </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: '0.875rem',
-                        fontWeight: state.selectedFile === file.path ? '600' : '400',
-                        color: state.selectedFile === file.path ? '#2563eb' : '#111827',
-                        wordBreak: 'break-all',
-                        marginBottom: '0.25rem'
-                      }}>
+                    <div className={contentStyles.fileDetails}>
+                      <div className={contentStyles.fileName}>
                         {file.path}
                       </div>
-                      <div style={{
-                        fontSize: '0.75rem',
-                        color: '#6b7280',
-                        display: 'flex',
-                        justifyContent: 'space-between'
-                      }}>
+                      <div className={contentStyles.fileMetadata}>
                         <span>{file.type}</span>
                         <span>{formatFileSize(file.size)}</span>
                       </div>
@@ -340,24 +260,18 @@ export default function SiteContentManagement() {
         </div>
 
         {/* File Editor */}
-        <div className={styles.card} style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className={`${pageStyles.card} ${contentStyles.editorCard}`}>
           {state.selectedFile ? (
             <>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>{state.selectedFile}</h2>
-                <p className={styles.cardDescription}>
+              <div className={pageStyles.cardHeader}>
+                <h2 className={pageStyles.cardTitle}>{state.selectedFile}</h2>
+                <p className={pageStyles.cardDescription}>
                   {state.files.find(f => f.path === state.selectedFile)?.type} file
                 </p>
               </div>
-              
+
               {state.loadingContent ? (
-                <div style={{ 
-                  flex: 1,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: '#6b7280'
-                }}>
+                <div className={contentStyles.editorPlaceholder}>
                   Loading file content...
                 </div>
               ) : (
@@ -370,24 +284,16 @@ export default function SiteContentManagement() {
               )}
             </>
           ) : (
-            <div style={{ 
-              flex: 1,
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              color: '#6b7280',
-              textAlign: 'center'
-            }}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: '1rem', opacity: 0.5 }}>
+            <div className={contentStyles.editorPlaceholder}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className={contentStyles.editorPlaceholderIcon}>
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14,2 14,8 20,8"></polyline>
                 <line x1="16" y1="13" x2="8" y2="13"></line>
                 <line x1="16" y1="17" x2="8" y2="17"></line>
                 <polyline points="10,9 9,9 8,9"></polyline>
               </svg>
-              <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No file selected</h3>
-              <p>Select a file from the left panel to start editing</p>
+              <h3 className={contentStyles.editorPlaceholderTitle}>No file selected</h3>
+              <p className={contentStyles.editorPlaceholderText}>Select a file from the left panel to start editing</p>
             </div>
           )}
         </div>

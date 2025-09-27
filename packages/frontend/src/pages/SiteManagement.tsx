@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { apiClient, Site } from '../api/client';
 import { useAuth } from '../store/authStore';
-import * as styles from '../components/layout/Layout.css';
+import * as layoutStyles from '../components/layout/Layout.css';
+import * as siteStyles from './SiteManagement.css';
+import * as pageStyles from '../styles/pages.css';
 
 interface SiteListState {
   sites: Site[];
@@ -99,33 +101,17 @@ export default function SiteManagement() {
 
   return (
     <Layout>
-      <div className={styles.header}>
+      <div className={layoutStyles.header}>
         <div>
-          <h1 className={styles.pageTitle}>Site Management</h1>
-          <p className={styles.pageDescription}>
+          <h1 className={layoutStyles.pageTitle}>Site Management</h1>
+          <p className={layoutStyles.pageDescription}>
             Manage your websites and their content
           </p>
         </div>
         {isAdmin && (
           <button
             onClick={() => navigate('/sites/create')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              fontWeight: 'medium',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s ease-in-out',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#1d4ed8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#2563eb';
-            }}
+            className={siteStyles.createSiteButton}
           >
             Create New Site
           </button>
@@ -133,36 +119,22 @@ export default function SiteManagement() {
       </div>
 
       {state.error && (
-        <div className={styles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
+        <div className={layoutStyles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
           <div style={{ color: '#dc2626', padding: '1rem', textAlign: 'center' }}>
             Error: {state.error}
           </div>
         </div>
       )}
 
-      <div className={styles.card}>
+      <div className={layoutStyles.card}>
         {/* Search Bar */}
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className={siteStyles.siteSearchContainer}>
           <input
             type="text"
             placeholder="Search sites by name, repository, or path..."
             value={state.searchQuery}
             onChange={handleSearchChange}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              outline: 'none',
-              transition: 'border-color 0.15s ease-in-out',
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#2563eb';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#d1d5db';
-            }}
+            className={pageStyles.searchInput}
           />
         </div>
 

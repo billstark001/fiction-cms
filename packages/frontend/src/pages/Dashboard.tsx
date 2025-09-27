@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import { apiClient, Site } from '../api/client';
 import { useAuth } from '../store/authStore';
-import * as styles from '../components/layout/Layout.css';
+import * as layoutStyles from '../components/layout/Layout.css';
+import * as dashboardStyles from './Dashboard.css';
+import * as pageStyles from '../styles/pages.css';
+import * as formStyles from '../styles/forms.css';
 
 interface DashboardStats {
   totalSites: number;
@@ -79,13 +82,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          height: '200px',
-          color: '#6b7280'
-        }}>
+        <div className={pageStyles.loadingText}>
           Loading dashboard...
         </div>
       </Layout>
@@ -95,12 +92,8 @@ export default function Dashboard() {
   if (error) {
     return (
       <Layout>
-        <div className={styles.card}>
-          <div style={{ 
-            color: '#dc2626', 
-            textAlign: 'center', 
-            padding: '2rem' 
-          }}>
+        <div className={layoutStyles.card}>
+          <div className={formStyles.errorMessage} style={{ textAlign: 'center' }}>
             Error: {error}
           </div>
         </div>
@@ -113,41 +106,36 @@ export default function Dashboard() {
   return (
     <Layout>
       {/* Stats Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1.5rem',
-        marginBottom: '2rem'
-      }}>
-        <div className={styles.card}>
-          <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#2563eb', margin: 0 }}>
+      <div className={dashboardStyles.statsGrid}>
+        <div className={layoutStyles.card}>
+          <h3 className={dashboardStyles.statNumberBlue}>
             {stats.totalSites}
           </h3>
-          <p style={{ color: '#6b7280', margin: '0.5rem 0 0 0' }}>Total Sites</p>
+          <p className={dashboardStyles.statLabel}>Total Sites</p>
         </div>
 
-        <div className={styles.card}>
-          <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#16a34a', margin: 0 }}>
+        <div className={layoutStyles.card}>
+          <h3 className={dashboardStyles.statNumberGreen}>
             {stats.activeSites}
           </h3>
-          <p style={{ color: '#6b7280', margin: '0.5rem 0 0 0' }}>Active Sites</p>
+          <p className={dashboardStyles.statLabel}>Active Sites</p>
         </div>
 
         {isAdmin && (
-          <div className={styles.card}>
-            <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#7c3aed', margin: 0 }}>
+          <div className={layoutStyles.card}>
+            <h3 className={dashboardStyles.statNumberPurple}>
               {stats.totalUsers}
             </h3>
-            <p style={{ color: '#6b7280', margin: '0.5rem 0 0 0' }}>Total Users</p>
+            <p className={dashboardStyles.statLabel}>Total Users</p>
           </div>
         )}
       </div>
 
       {/* Recent Sites */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>Your Sites</h2>
-          <p className={styles.cardDescription}>
+      <div className={layoutStyles.card}>
+        <div className={layoutStyles.cardHeader}>
+          <h2 className={layoutStyles.cardTitle}>Your Sites</h2>
+          <p className={layoutStyles.cardDescription}>
             Recently accessed sites in your account
           </p>
         </div>
@@ -167,49 +155,23 @@ export default function Dashboard() {
             gap: '1rem' 
           }}>
             {sites.map(site => (
-              <div 
-                key={site.id} 
-                style={{
-                  padding: '1rem',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.375rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div>
-                  <h3 style={{ 
-                    fontSize: '1rem', 
-                    fontWeight: 'medium', 
-                    color: '#111827', 
-                    margin: '0 0 0.25rem 0' 
-                  }}>
+              <div key={site.id} className={dashboardStyles.recentSiteItem}>
+                <div className={dashboardStyles.siteItemInfo}>
+                  <h3 className={dashboardStyles.siteItemTitle}>
                     {site.name}
                   </h3>
-                  <p style={{ 
-                    fontSize: '0.875rem', 
-                    color: '#6b7280', 
-                    margin: 0 
-                  }}>
+                  <p className={dashboardStyles.siteItemDescription}>
                     {site.description || 'No description'}
                   </p>
-                  <a 
-                    href={site.githubRepositoryUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ 
-                      fontSize: '0.75rem', 
-                      color: '#2563eb', 
-                      textDecoration: 'none' 
-                    }}
-                  >
-                    View Repository →
-                  </a>
+                  <div>
+                    <span className={dashboardStyles.siteItemPath}>
+                      {site.localPath}
+                    </span>
+                  </div>
                 </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{
+                <div className={dashboardStyles.siteItemActions}>
+                  <span className={site.isActive ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'} style={{
                     padding: '0.25rem 0.75rem',
                     borderRadius: '9999px',
                     fontSize: '0.75rem',
@@ -219,6 +181,12 @@ export default function Dashboard() {
                   }}>
                     {site.isActive ? 'Active' : 'Inactive'}
                   </span>
+                  <a 
+                    href={`/sites/${site.id}/manage`}
+                    className={dashboardStyles.siteItemButton}
+                  >
+                    Manage
+                  </a>
                 </div>
               </div>
             ))}
@@ -227,26 +195,17 @@ export default function Dashboard() {
       </div>
 
       {/* System Health */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>System Status</h2>
-          <p className={styles.cardDescription}>
+      <div className={layoutStyles.card}>
+        <div className={layoutStyles.cardHeader}>
+          <h2 className={layoutStyles.cardTitle}>System Status</h2>
+          <p className={layoutStyles.cardDescription}>
             Current system health and information
           </p>
         </div>
 
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '1rem' 
-        }}>
-          <div style={{ 
-            width: '12px', 
-            height: '12px', 
-            backgroundColor: '#16a34a', 
-            borderRadius: '50%' 
-          }}></div>
-          <span style={{ color: '#374151' }}>All systems operational</span>
+        <div className={dashboardStyles.systemHealthContainer}>
+          <div className={dashboardStyles.healthIndicatorGreen}></div>
+          <span className={dashboardStyles.healthText}>All systems operational</span>
         </div>
       </div>
     </Layout>
