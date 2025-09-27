@@ -263,3 +263,53 @@ export const fieldGroupVertical = style({
   flexDirection: 'column',
   gap: '0.25rem',
 });
+
+// Error dismiss button (for inline error messages)
+export const errorDismissButton = style({
+  marginLeft: '1rem',
+  padding: '0.25rem 0.5rem',
+  backgroundColor: 'transparent',
+  border: '1px solid #dc2626',
+  borderRadius: '0.25rem',
+  color: '#dc2626',
+  fontSize: '0.75rem',
+  cursor: 'pointer',
+  
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#fef2f2',
+    },
+  },
+});
+
+// Back button style
+export const backButton = style({
+  background: 'none',
+  border: 'none',
+  color: '#6b7280',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  padding: 0,
+  marginBottom: '0.5rem',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+  
+  selectors: {
+    '&:hover': {
+      color: '#374151',
+    },
+  },
+});
+
+// Help text for form fields
+export const helpText = style({
+  fontSize: '0.75rem',
+  color: '#6b7280',
+  marginTop: '0.5rem',
+});
+
+// Large text area
+export const textAreaLarge = style([textarea, {
+  minHeight: '120px',
+}]);

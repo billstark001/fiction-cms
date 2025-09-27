@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { apiClient } from '../api/client';
-import * as styles from '../components/layout/Layout.css';
+import { ArrowLeftIcon } from '../components/icons';
+import * as layoutStyles from '../components/layout/Layout.css';
+import * as formStyles from '../styles/forms.css';
 
 interface SiteFormState {
   name: string;
@@ -74,77 +76,47 @@ export default function CreateSite() {
 
   return (
     <Layout>
-      <div className={styles.header}>
+      <div className={layoutStyles.header}>
         <div>
           <button
             onClick={() => navigate('/sites')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6b7280',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              padding: 0,
-              marginBottom: '0.5rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
+            className={formStyles.backButton}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15,18 9,12 15,6"></polyline>
-            </svg>
+            <ArrowLeftIcon />
             Back to Sites
           </button>
-          <h1 className={styles.pageTitle}>Create New Site</h1>
-          <p className={styles.pageDescription}>
+          <h1 className={layoutStyles.pageTitle}>Create New Site</h1>
+          <p className={layoutStyles.pageDescription}>
             Configure a new site for content management
           </p>
         </div>
       </div>
 
       {state.error && (
-        <div className={styles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
-          <div style={{ color: '#dc2626', padding: '1rem', textAlign: 'center' }}>
-            {state.error}
-            <button
-              onClick={() => setState(prev => ({ ...prev, error: null }))}
-              style={{
-                marginLeft: '1rem',
-                padding: '0.25rem 0.5rem',
-                backgroundColor: 'transparent',
-                border: '1px solid #dc2626',
-                borderRadius: '0.25rem',
-                color: '#dc2626',
-                fontSize: '0.75rem',
-                cursor: 'pointer'
-              }}
-            >
-              Dismiss
-            </button>
-          </div>
+        <div className={formStyles.errorMessage}>
+          {state.error}
+          <button
+            onClick={() => setState(prev => ({ ...prev, error: null }))}
+            className={formStyles.errorDismissButton}
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Basic Information</h2>
-            <p className={styles.cardDescription}>
+        <div className={layoutStyles.card}>
+          <div className={layoutStyles.cardHeader}>
+            <h2 className={layoutStyles.cardTitle}>Basic Information</h2>
+            <p className={layoutStyles.cardDescription}>
               Basic site configuration and repository details
             </p>
           </div>
 
-          <div style={{ display: 'grid', gap: '1.5rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: 'medium',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
+          <div className={formStyles.formGrid}>
+            <div className={formStyles.formGridTwoColumns}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Site Name *
                 </label>
                 <input
@@ -153,25 +125,12 @@ export default function CreateSite() {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="My Website"
                   required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    outline: 'none'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
 
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: 'medium',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Local Path *
                 </label>
                 <input
@@ -180,26 +139,13 @@ export default function CreateSite() {
                   onChange={(e) => handleInputChange('localPath', e.target.value)}
                   placeholder="/path/to/site"
                   required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    outline: 'none'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
             </div>
 
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 'medium',
-                color: '#374151',
-                marginBottom: '0.5rem'
-              }}>
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
                 Description
               </label>
               <textarea
@@ -207,26 +153,12 @@ export default function CreateSite() {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="A brief description of your site"
                 rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                  resize: 'vertical'
-                }}
+                className={formStyles.textAreaLarge}
               />
             </div>
 
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 'medium',
-                color: '#374151',
-                marginBottom: '0.5rem'
-              }}>
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
                 GitHub Repository URL *
               </label>
               <input
@@ -235,25 +167,12 @@ export default function CreateSite() {
                 onChange={(e) => handleInputChange('githubRepositoryUrl', e.target.value)}
                 placeholder="https://github.com/username/repository"
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  outline: 'none'
-                }}
+                className={formStyles.input}
               />
             </div>
 
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 'medium',
-                color: '#374151',
-                marginBottom: '0.5rem'
-              }}>
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
                 GitHub Personal Access Token
               </label>
               <input
@@ -261,44 +180,27 @@ export default function CreateSite() {
                 value={state.githubPat}
                 onChange={(e) => handleInputChange('githubPat', e.target.value)}
                 placeholder="ghp_xxxxxxxxxxxx"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  outline: 'none'
-                }}
+                className={formStyles.input}
               />
-              <p style={{ 
-                fontSize: '0.75rem', 
-                color: '#6b7280', 
-                marginTop: '0.5rem' 
-              }}>
+              <p className={formStyles.helpText}>
                 Required for private repositories and push access. Generate at GitHub Settings → Developer settings → Personal access tokens.
               </p>
             </div>
           </div>
         </div>
 
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Build Configuration</h2>
-            <p className={styles.cardDescription}>
+        <div className={layoutStyles.card}>
+          <div className={layoutStyles.cardHeader}>
+            <h2 className={layoutStyles.cardTitle}>Build Configuration</h2>
+            <p className={layoutStyles.cardDescription}>
               Optional build and deployment settings
             </p>
           </div>
 
-          <div style={{ display: 'grid', gap: '1.5rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: 'medium',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
+          <div className={formStyles.formGrid}>
+            <div className={formStyles.formGridTwoColumns}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Build Command
                 </label>
                 <input
@@ -306,25 +208,12 @@ export default function CreateSite() {
                   value={state.buildCommand}
                   onChange={(e) => handleInputChange('buildCommand', e.target.value)}
                   placeholder="npm run build"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    outline: 'none'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
 
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: 'medium',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>
                   Build Output Directory
                 </label>
                 <input
@@ -332,26 +221,13 @@ export default function CreateSite() {
                   value={state.buildOutputDir}
                   onChange={(e) => handleInputChange('buildOutputDir', e.target.value)}
                   placeholder="dist"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    outline: 'none'
-                  }}
+                  className={formStyles.input}
                 />
               </div>
             </div>
 
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 'medium',
-                color: '#374151',
-                marginBottom: '0.5rem'
-              }}>
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
                 Editable Paths
               </label>
               <input
@@ -359,47 +235,21 @@ export default function CreateSite() {
                 value={state.editablePaths}
                 onChange={(e) => handleInputChange('editablePaths', e.target.value)}
                 placeholder="content, posts, pages"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  outline: 'none'
-                }}
+                className={formStyles.input}
               />
-              <p style={{ 
-                fontSize: '0.75rem', 
-                color: '#6b7280', 
-                marginTop: '0.5rem' 
-              }}>
+              <p className={formStyles.helpText}>
                 Comma-separated list of directories that can be edited through the CMS (relative to site root).
               </p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '1rem',
-          marginTop: '1.5rem'
-        }}>
+        <div className={formStyles.formActions}>
           <button
             type="button"
             onClick={() => navigate('/sites')}
             disabled={state.loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f3f4f6',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              fontWeight: 'medium',
-              cursor: state.loading ? 'not-allowed' : 'pointer',
-              transition: 'background-color 0.15s ease-in-out',
-            }}
+            className={formStyles.secondaryButton}
           >
             Cancel
           </button>
@@ -407,18 +257,7 @@ export default function CreateSite() {
           <button
             type="submit"
             disabled={state.loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: state.loading ? '#9ca3af' : '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              fontWeight: 'medium',
-              cursor: state.loading ? 'not-allowed' : 'pointer',
-              transition: 'background-color 0.15s ease-in-out',
-              minWidth: '120px'
-            }}
+            className={formStyles.primaryButton}
           >
             {state.loading ? 'Creating...' : 'Create Site'}
           </button>
