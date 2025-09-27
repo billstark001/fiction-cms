@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { useRouter } from '@tanstack/react-router';
 import { useAuth, useAuthActions } from '../../store/authStore';
 import * as styles from './ProtectedRoute.css';
 
@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children, requiredRoles = [] }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { checkAuth } = useAuthActions();
-  const location = useLocation();
+  const router = useRouter();
 
   // Check authentication status on mount
   useEffect(() => {
@@ -31,7 +31,13 @@ export default function ProtectedRoute({ children, requiredRoles = [] }: Protect
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const currentPath = router.state.location.pathname;
+    router.navigate({ 
+      to: '/login', 
+      search: { redirect: currentPath },
+      replace: true 
+    });
+    return null;
   }
 
   // Check role-based access if required roles are specified

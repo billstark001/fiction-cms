@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
 import Layout from '../components/layout/Layout';
-import { apiClient } from '../api/client';
+import { useCreateSite } from '../hooks/useSites';
 import { ArrowLeftIcon } from '../components/icons';
 import * as layoutStyles from '../components/layout/Layout.css';
 import * as formStyles from '../styles/forms.css';
 
-interface SiteFormState {
+interface SiteFormData {
   name: string;
   description: string;
   githubRepositoryUrl: string;
@@ -15,62 +15,51 @@ interface SiteFormState {
   buildCommand: string;
   buildOutputDir: string;
   editablePaths: string;
-  loading: boolean;
-  error: string | null;
 }
 
 export default function CreateSite() {
-  const navigate = useNavigate();
-  const [state, setState] = useState<SiteFormState>({
-    name: '',
-    description: '',
-    githubRepositoryUrl: '',
-    githubPat: '',
-    localPath: '',
-    buildCommand: '',
-    buildOutputDir: '',
-    editablePaths: '',
-    loading: false,
-    error: null
+  const router = useRouter();
+  const createSiteMutation = useCreateSite();
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    setError,
+  } = useForm<SiteFormData>({
+    mode: 'onChange',
+    defaultValues: {
+      name: '',
+      description: '',
+      githubRepositoryUrl: '',
+      githubPat: '',
+      localPath: '',
+      buildCommand: '',
+      buildOutputDir: '',
+      editablePaths: '',
+    },
   });
 
-  const handleInputChange = (field: keyof SiteFormState, value: string) => {
-    setState(prev => ({ ...prev, [field]: value, error: null }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!state.name.trim() || !state.githubRepositoryUrl.trim() || !state.localPath.trim()) {
-      setState(prev => ({ ...prev, error: 'Name, GitHub Repository URL, and Local Path are required' }));
-      return;
-    }
-
+  const onSubmit = async (data: SiteFormData) => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-
-      const siteData = {
-        name: state.name.trim(),
-        description: state.description.trim() || undefined,
-        githubRepositoryUrl: state.githubRepositoryUrl.trim(),
-        githubPat: state.githubPat.trim(),
-        localPath: state.localPath.trim(),
-        buildCommand: state.buildCommand.trim() || undefined,
-        buildOutputDir: state.buildOutputDir.trim() || undefined,
-        editablePaths: state.editablePaths.trim() 
-          ? state.editablePaths.split(',').map(p => p.trim()).filter(p => p)
-          : []
-      };
-
-      const response = await apiClient.createSite(siteData as any);
-      console.log('Site created successfully:', response);
-      navigate('/sites');
+      await createSiteMutation.mutateAsync({
+        name: data.name.trim(),
+        description: data.description?.trim() || undefined,
+        githubRepositoryUrl: data.githubRepositoryUrl.trim(),
+        githubPat: data.githubPat.trim(),
+        localPath: data.localPath.trim(),
+        buildCommand: data.buildCommand?.trim() || undefined,
+        buildOutputDir: data.buildOutputDir?.trim() || undefined,
+        editablePaths: data.editablePaths?.trim() || undefined,
+      });
+      
+      // Navigate back to sites list on success
+      router.navigate({ to: '/sites' });
     } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to create site',
-        loading: false
-      }));
+      console.error('Create site error:', error);
+      setError('root', {
+        message: error instanceof Error ? error.message : 'Failed to create site'
+      });
     }
   };
 
@@ -79,7 +68,7 @@ export default function CreateSite() {
       <div className={layoutStyles.header}>
         <div>
           <button
-            onClick={() => navigate('/sites')}
+            onClick={() => router.navigate({ to: '/sites' })}
             className={formStyles.backButton}
           >
             <ArrowLeftIcon />
@@ -92,19 +81,13 @@ export default function CreateSite() {
         </div>
       </div>
 
-      {state.error && (
+      {(errors.root || createSiteMutation.error) && (
         <div className={formStyles.errorMessage}>
-          {state.error}
-          <button
-            onClick={() => setState(prev => ({ ...prev, error: null }))}
-            className={formStyles.errorDismissButton}
-          >
-            Dismiss
-          </button>
+          {errors.root?.message || (createSiteMutation.error as Error)?.message || 'Failed to create site'}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className={layoutStyles.card}>
           <div className={layoutStyles.cardHeader}>
             <h2 className={layoutStyles.cardTitle}>Basic Information</h2>
@@ -121,12 +104,18 @@ export default function CreateSite() {
                 </label>
                 <input
                   type="text"
-                  value={state.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  {...register('name', {
+                    required: 'Site name is required',
+                    validate: value => value.trim().length > 0 || 'Site name cannot be empty'
+                  })}
                   placeholder="My Website"
-                  required
                   className={formStyles.input}
                 />
+                {errors.name && (
+                  <div className={formStyles.errorMessage}>
+                    {errors.name.message}
+                  </div>
+                )}
               </div>
 
               <div className={formStyles.formGroup}>
@@ -135,12 +124,18 @@ export default function CreateSite() {
                 </label>
                 <input
                   type="text"
-                  value={state.localPath}
-                  onChange={(e) => handleInputChange('localPath', e.target.value)}
+                  {...register('localPath', {
+                    required: 'Local path is required',
+                    validate: value => value.trim().length > 0 || 'Local path cannot be empty'
+                  })}
                   placeholder="/path/to/site"
-                  required
                   className={formStyles.input}
                 />
+                {errors.localPath && (
+                  <div className={formStyles.errorMessage}>
+                    {errors.localPath.message}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -149,8 +144,7 @@ export default function CreateSite() {
                 Description
               </label>
               <textarea
-                value={state.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                {...register('description')}
                 placeholder="A brief description of your site"
                 rows={3}
                 className={formStyles.textAreaLarge}
@@ -163,12 +157,21 @@ export default function CreateSite() {
               </label>
               <input
                 type="url"
-                value={state.githubRepositoryUrl}
-                onChange={(e) => handleInputChange('githubRepositoryUrl', e.target.value)}
+                {...register('githubRepositoryUrl', {
+                  required: 'GitHub repository URL is required',
+                  pattern: {
+                    value: /^https:\/\/github\.com\/[^\/]+\/[^\/]+$/,
+                    message: 'Please enter a valid GitHub repository URL'
+                  }
+                })}
                 placeholder="https://github.com/username/repository"
-                required
                 className={formStyles.input}
               />
+              {errors.githubRepositoryUrl && (
+                <div className={formStyles.errorMessage}>
+                  {errors.githubRepositoryUrl.message}
+                </div>
+              )}
             </div>
 
             <div className={formStyles.formGroup}>
@@ -177,8 +180,7 @@ export default function CreateSite() {
               </label>
               <input
                 type="password"
-                value={state.githubPat}
-                onChange={(e) => handleInputChange('githubPat', e.target.value)}
+                {...register('githubPat')}
                 placeholder="ghp_xxxxxxxxxxxx"
                 className={formStyles.input}
               />
@@ -205,8 +207,7 @@ export default function CreateSite() {
                 </label>
                 <input
                   type="text"
-                  value={state.buildCommand}
-                  onChange={(e) => handleInputChange('buildCommand', e.target.value)}
+                  {...register('buildCommand')}
                   placeholder="npm run build"
                   className={formStyles.input}
                 />
@@ -218,8 +219,7 @@ export default function CreateSite() {
                 </label>
                 <input
                   type="text"
-                  value={state.buildOutputDir}
-                  onChange={(e) => handleInputChange('buildOutputDir', e.target.value)}
+                  {...register('buildOutputDir')}
                   placeholder="dist"
                   className={formStyles.input}
                 />
@@ -232,8 +232,7 @@ export default function CreateSite() {
               </label>
               <input
                 type="text"
-                value={state.editablePaths}
-                onChange={(e) => handleInputChange('editablePaths', e.target.value)}
+                {...register('editablePaths')}
                 placeholder="content, posts, pages"
                 className={formStyles.input}
               />
@@ -247,19 +246,26 @@ export default function CreateSite() {
         <div className={formStyles.formActions}>
           <button
             type="button"
-            onClick={() => navigate('/sites')}
-            disabled={state.loading}
+            onClick={() => router.navigate({ to: '/sites' })}
+            disabled={createSiteMutation.isPending}
             className={formStyles.secondaryButton}
           >
             Cancel
           </button>
-
+          
           <button
             type="submit"
-            disabled={state.loading}
+            disabled={createSiteMutation.isPending || !isValid}
             className={formStyles.primaryButton}
           >
-            {state.loading ? 'Creating...' : 'Create Site'}
+            {createSiteMutation.isPending ? (
+              <>
+                <span className={formStyles.loadingSpinner}></span>
+                Creating Site...
+              </>
+            ) : (
+              'Create Site'
+            )}
           </button>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from '@tanstack/react-router';
 import Layout from '../components/layout/Layout';
 import { apiClient, Site } from '../api/client';
 import { useAuth } from '../store/authStore';
@@ -21,7 +21,7 @@ interface SiteListState {
 
 export default function SiteManagement() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [state, setState] = useState<SiteListState>({
     sites: [],
     loading: true,
@@ -80,7 +80,7 @@ export default function SiteManagement() {
   };
 
   const handleManageSite = (siteId: string) => {
-    navigate(`/sites/${siteId}/manage`);
+    router.navigate({ to: `/sites/${siteId}/manage` });
   };
 
   const isAdmin = user?.roles?.some(role => role === 'admin') ?? false;
@@ -106,7 +106,7 @@ export default function SiteManagement() {
         </div>
         {isAdmin && (
           <button
-            onClick={() => navigate('/sites/create')}
+            onClick={() => router.navigate({ to: '/sites/create' })}
             className={siteStyles.createSiteButton}
           >
             Create New Site
