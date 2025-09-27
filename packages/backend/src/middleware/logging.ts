@@ -27,7 +27,7 @@ export function requestLoggingMiddleware() {
       path,
       userAgent,
       ip,
-      headers: Object.fromEntries(c.req.header() as any)
+      headers: Object.fromEntries(c.req.raw.headers.entries()),
     }, `${method} ${path} started`);
 
     // Store logger and start time in context for other middleware/routes to use

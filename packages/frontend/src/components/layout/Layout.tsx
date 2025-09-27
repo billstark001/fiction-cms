@@ -33,7 +33,7 @@ export default function Layout({ children }: LayoutProps) {
   // Filter nav items based on user roles
   const availableNavItems = navItems.filter(item => {
     if (!item.requiredRole) return true;
-    return user?.roles.some(role => role.name === item.requiredRole);
+    return user?.roles?.some(role => role.name === item.requiredRole);
   });
 
   const primaryRole = user?.roles?.[0]?.displayName || 'User';

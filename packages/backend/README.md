@@ -15,17 +15,17 @@ A comprehensive user management and engine control system built with Hono.js, SQ
 
 ### Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
+- Node.js 18+
+- pnpm (npm or yarn is also acceptable)
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server
-npm run dev
+pnpm run dev
 ```
 
 The server will start on `http://localhost:3001`
@@ -107,7 +107,7 @@ curl -X POST http://localhost:3001/api/users \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -d '{
-    "username": "newuser",
+    "username": "new_user",
     "email": "user@example.com", 
     "password": "password123",
     "displayName": "New User"
@@ -168,23 +168,23 @@ NODE_ENV=development
 
 ```bash
 # Start development server with hot reload
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Start production server
-npm start
+pnpm start
 
 # Type checking
-npm run type-check
+pnpm run type-check
 
 # Linting
-npm run lint
+pnpm run lint
 
 # Database operations
-npm run db:push    # Push schema to database
-npm run db:studio  # Open Drizzle Studio
+pnpm run db:push    # Push schema to database
+pnpm run db:studio  # Open Drizzle Studio
 ```
 
 ## Architecture
