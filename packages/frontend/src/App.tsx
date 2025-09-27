@@ -5,6 +5,9 @@ import Login from './components/auth/Login';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
+import SiteManagement from './pages/SiteManagement';
+import SiteContentManagement from './pages/SiteContentManagement';
+import CreateSite from './pages/CreateSite';
 import './index.css';
 
 function App() {
@@ -44,18 +47,25 @@ function App() {
           path="/sites" 
           element={
             <ProtectedRoute>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                height: '100vh',
-                flexDirection: 'column',
-                gap: '1rem',
-                textAlign: 'center'
-              }}>
-                <h1>Site Management</h1>
-                <p>This feature is coming soon!</p>
-              </div>
+              <SiteManagement />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/sites/create" 
+          element={
+            <ProtectedRoute requiredRoles={['admin']}>
+              <CreateSite />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/sites/:siteId/manage" 
+          element={
+            <ProtectedRoute>
+              <SiteContentManagement />
             </ProtectedRoute>
           } 
         />

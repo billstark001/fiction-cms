@@ -97,9 +97,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async (): Promise<boolean> => {
-        const token = localStorage.getItem('fiction_cms_access_token');
+        // Check if localStorage is available and get token safely
+        const token = typeof window !== 'undefined' && window.localStorage 
+          ? localStorage.getItem('fiction_cms_access_token')
+          : null;
         
-        if (!token) {
+        if (!token || token === 'undefined') {
           set({ 
             user: null,
             isAuthenticated: false,

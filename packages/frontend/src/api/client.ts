@@ -55,6 +55,16 @@ export interface Site {
   isActive: boolean;
 }
 
+export interface SitesResponse {
+  sites: Site[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface CreateUserRequest {
   username: string;
   email: string;
@@ -94,7 +104,10 @@ class ApiClient {
    */
   setAccessToken(token: string) {
     this.accessToken = token;
-    localStorage.setItem('fiction_cms_access_token', token);
+    // Safely store token in localStorage if available
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('fiction_cms_access_token', token);
+    }
   }
 
   /**
@@ -102,15 +115,25 @@ class ApiClient {
    */
   clearAccessToken() {
     this.accessToken = null;
-    localStorage.removeItem('fiction_cms_access_token');
-    localStorage.removeItem('fiction_cms_refresh_token');
+    // Safely remove tokens from localStorage if available
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('fiction_cms_access_token');
+      localStorage.removeItem('fiction_cms_refresh_token');
+    }
   }
 
   /**
    * Load token from localStorage
    */
   private loadTokenFromStorage() {
-    this.accessToken = localStorage.getItem('fiction_cms_access_token');
+    // Check if localStorage is available (browser environment)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const token = localStorage.getItem('fiction_cms_access_token');
+      // Only set token if it's not null and not 'undefined' string
+      if (token && token !== 'undefined') {
+        this.accessToken = token;
+      }
+    }
   }
 
   /**
@@ -279,14 +302,16 @@ class ApiClient {
   }
 
   // Site management endpoints
-  async getSites(params?: { page?: number; limit?: number }): Promise<{
-    sites: Site[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const queryString = params ? new URLSearchParams(params as any).toString() : '';
-    return this.request<any>(`/sites${queryString ? `?${queryString}` : ''}`);
+  async getSites(params?: { page?: number; limit?: number; q?: string }): Promise<SitesResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.q) queryParams.set('q', params.q);
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/sites?${queryString}` : '/sites';
+    
+    return this.request<SitesResponse>(url);
   }
 
   async getSiteById(id: string): Promise<Site> {
@@ -309,6 +334,62 @@ class ApiClient {
 
   async deleteSite(id: string): Promise<void> {
     await this.request(`/sites/${id}`, { method: 'DELETE' });
+  }
+
+  // Content management API functions
+  async getEditableFiles(siteId: string): Promise<{
+    files: Array<{
+      path: string;
+      type: 'markdown' | 'json' | 'sqlite' | 'asset';
+      size: number;
+      lastModified: string;
+    }>;
+    timestamp: string;
+  }> {
+    return this.request<any>(`/engine/sites/${siteId}/files`);
+  }
+
+  async getFileContent(siteId: string, filePath: string): Promise<{
+    content: string;
+    path: string;
+    timestamp: string;
+  }> {
+    return this.request<any>(`/engine/sites/${siteId}/files/${encodeURIComponent(filePath)}`);
+  }
+
+  async updateFileContent(siteId: string, filePath: string, content: string, commitMessage?: string): Promise<{
+    message: string;
+    path: string;
+    commitHash: string | null;
+    timestamp: string;
+  }> {
+    return this.request<any>(`/engine/sites/${siteId}/files/${encodeURIComponent(filePath)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content, commitMessage }),
+    });
+  }
+
+  async createFile(siteId: string, filePath: string, content: string, commitMessage?: string): Promise<{
+    message: string;
+    path: string;
+    commitHash: string | null;
+    timestamp: string;
+  }> {
+    return this.request<any>(`/engine/sites/${siteId}/files`, {
+      method: 'POST',
+      body: JSON.stringify({ path: filePath, content, commitMessage }),
+    });
+  }
+
+  async deleteFile(siteId: string, filePath: string): Promise<{
+    message: string;
+    path: string;
+    commitHash: string | null;
+    timestamp: string;
+  }> {
+    return this.request<any>(`/engine/sites/${siteId}/files/${encodeURIComponent(filePath)}`, {
+      method: 'DELETE',
+    });
   }
 
   // Health check
