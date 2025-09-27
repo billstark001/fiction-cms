@@ -32,7 +32,7 @@ export class AssetManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '上传文件'
+      'Upload file'
     );
   }
 
@@ -52,7 +52,7 @@ export class AssetManager extends BaseManager {
         const result = await this.uploadAsset(siteConfig, asset.relativePath, asset.buffer);
         return { ...result, path: asset.relativePath } as FileOperationResult & { path: string };
       },
-      '批量上传文件'
+      'Batch upload files'
     ) as Promise<Array<FileOperationResult & { path: string }>>;
   }
 
@@ -65,7 +65,7 @@ export class AssetManager extends BaseManager {
         const { exists, fullPath } = await this.checkFileExists(siteConfig, relativePath);
         
         if (!exists) {
-          throw new Error('文件不存在');
+          throw new Error('File does not exist');
         }
 
         await fs.unlink(fullPath);
@@ -77,7 +77,7 @@ export class AssetManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '删除文件'
+      'Delete file'
     );
   }
 
@@ -89,7 +89,7 @@ export class AssetManager extends BaseManager {
     sourcePath: string, 
     targetPath: string
   ): Promise<FileOperationResult> {
-    return this.performCopyOperation(siteConfig, sourcePath, targetPath, '复制');
+    return this.performCopyOperation(siteConfig, sourcePath, targetPath, 'Copy');
   }
 
   /**
@@ -100,7 +100,7 @@ export class AssetManager extends BaseManager {
     sourcePath: string, 
     targetPath: string
   ): Promise<FileOperationResult> {
-    return this.performCopyOperation(siteConfig, sourcePath, targetPath, '移动');
+    return this.performCopyOperation(siteConfig, sourcePath, targetPath, 'Move');
   }
 
   /**
@@ -123,7 +123,7 @@ export class AssetManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '获取文件信息'
+      'Get file info'
     );
   }
 
@@ -144,7 +144,7 @@ export class AssetManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '读取文件'
+      'Read file'
     );
   }
 
@@ -162,7 +162,7 @@ export class AssetManager extends BaseManager {
       },
       siteConfig,
       relativeDirPath,
-      '扫描目录'
+      'Scan directory'
     );
   }
 

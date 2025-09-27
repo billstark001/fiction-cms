@@ -28,7 +28,7 @@ export abstract class BaseManager {
         logHelpers.fileOperation('read', relativePath, undefined, Date.now() - startTime, false);
         return {
           success: false,
-          error: '访问被拒绝：文件不在允许的编辑路径内'
+          error: 'Access denied: file is not within allowed editable paths'
         };
       }
 
@@ -45,9 +45,9 @@ export abstract class BaseManager {
       }
       
       logHelpers.fileOperation(
-        operationName.includes('读取') || operationName.includes('read') ? 'read' : 
-        operationName.includes('写入') || operationName.includes('write') ? 'write' :
-        operationName.includes('删除') || operationName.includes('delete') ? 'delete' : 'create',
+        operationName.includes('read') || operationName.includes('Read') ? 'read' : 
+        operationName.includes('write') || operationName.includes('Write') ? 'write' :
+        operationName.includes('delete') || operationName.includes('Delete') ? 'delete' : 'create',
         relativePath,
         fileSize,
         duration,
@@ -62,9 +62,9 @@ export abstract class BaseManager {
       const duration = Date.now() - startTime;
       
       logHelpers.fileOperation(
-        operationName.includes('读取') || operationName.includes('read') ? 'read' : 
-        operationName.includes('写入') || operationName.includes('write') ? 'write' :
-        operationName.includes('删除') || operationName.includes('delete') ? 'delete' : 'create',
+        operationName.includes('read') || operationName.includes('Read') ? 'read' : 
+        operationName.includes('write') || operationName.includes('Write') ? 'write' :
+        operationName.includes('delete') || operationName.includes('Delete') ? 'delete' : 'create',
         relativePath,
         undefined,
         duration,
@@ -73,7 +73,7 @@ export abstract class BaseManager {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : `${operationName}失败`
+        error: error instanceof Error ? error.message : `${operationName} failed`
       };
     }
   }
@@ -93,7 +93,7 @@ export abstract class BaseManager {
         } catch (error) {
           return {
             success: false,
-            error: error instanceof Error ? error.message : `${operationName}失败`,
+            error: error instanceof Error ? error.message : `${operationName} failed`,
             path: typeof item === 'string' ? item : undefined
           };
         }
@@ -146,7 +146,7 @@ export abstract class BaseManager {
     siteConfig: SiteConfig,
     sourcePath: string,
     targetPath: string,
-    operationType: '复制' | '移动'
+    operationType: 'Copy' | 'Move' | 'copy' | 'move'
   ): Promise<FileOperationResult> {
     return this.executeFileOperation(
       async () => {
@@ -155,11 +155,11 @@ export abstract class BaseManager {
         const targetAllowed = commonFileOperations.isPathAllowed(siteConfig, targetPath);
 
         if (!sourceCheck.allowed || !targetAllowed) {
-          throw new Error('访问被拒绝：文件不在允许的编辑路径内');
+          throw new Error('Access denied: file is not within allowed editable paths');
         }
 
         if (!sourceCheck.exists) {
-          throw new Error('源文件不存在');
+          throw new Error('Source file does not exist');
         }
 
         const targetFullPath = path.join(siteConfig.localPath, targetPath);
@@ -168,7 +168,7 @@ export abstract class BaseManager {
         await this.ensureTargetDirectory(targetFullPath);
 
         // 执行操作
-        if (operationType === '复制') {
+        if (operationType === 'Copy' || operationType === 'copy') {
           await fs.copyFile(sourceCheck.fullPath, targetFullPath);
         } else {
           await fs.rename(sourceCheck.fullPath, targetFullPath);

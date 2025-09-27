@@ -30,7 +30,7 @@ export class SQLiteManager extends BaseManager {
       if (!sqliteConfig) {
         return {
           success: false,
-          error: 'SQLite文件不在允许的编辑列表中'
+          error: 'SQLite file is not in the allowed editable list'
         };
       }
 
@@ -44,7 +44,7 @@ export class SQLiteManager extends BaseManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : `${operationName}失败`
+        error: error instanceof Error ? error.message : `${operationName} failed`
       };
     }
   }
@@ -63,7 +63,7 @@ export class SQLiteManager extends BaseManager {
       (db, sqliteConfig) => {
         const tableConfig = sqliteConfig.editableTables.find(t => t.tableName === tableName);
         if (!tableConfig) {
-          throw new Error('表不在允许的编辑列表中');
+          throw new Error('Table is not in the allowed editable list');
         }
 
         // 获取表结构
@@ -95,7 +95,7 @@ export class SQLiteManager extends BaseManager {
       },
       siteConfig,
       sqliteFilePath,
-      'SQLite查询'
+      'SQLite query'
     );
   }
 
@@ -113,7 +113,7 @@ export class SQLiteManager extends BaseManager {
       (db, sqliteConfig) => {
         const tableConfig = sqliteConfig.editableTables.find(t => t.tableName === tableName);
         if (!tableConfig) {
-          throw new Error('表不在允许的编辑列表中');
+          throw new Error('Table is not in the allowed editable list');
         }
 
         const rowsAffected = operation(db, tableConfig);
@@ -154,7 +154,7 @@ export class SQLiteManager extends BaseManager {
             );
 
             if (unauthorizedColumns.length > 0) {
-              throw new Error(`不允许编辑列: ${unauthorizedColumns.join(', ')}`);
+              throw new Error(`Editing columns not allowed: ${unauthorizedColumns.join(', ')}`);
             }
 
             // 构建UPDATE语句
@@ -178,7 +178,7 @@ export class SQLiteManager extends BaseManager {
       siteConfig,
       sqliteFilePath,
       tableName,
-      'SQLite更新'
+      'SQLite update'
     );
   }
 
@@ -203,7 +203,7 @@ export class SQLiteManager extends BaseManager {
             );
 
             if (unauthorizedColumns.length > 0) {
-              throw new Error(`不允许编辑列: ${unauthorizedColumns.join(', ')}`);
+              throw new Error(`Editing columns not allowed: ${unauthorizedColumns.join(', ')}`);
             }
 
             const columns = insertColumns.join(', ');
@@ -222,7 +222,7 @@ export class SQLiteManager extends BaseManager {
       siteConfig,
       sqliteFilePath,
       tableName,
-      'SQLite插入'
+      'SQLite insert'
     );
   }
 
@@ -256,7 +256,7 @@ export class SQLiteManager extends BaseManager {
       siteConfig,
       sqliteFilePath,
       tableName,
-      'SQLite删除'
+      'SQLite delete'
     );
   }
 
@@ -285,7 +285,7 @@ export class SQLiteManager extends BaseManager {
       },
       siteConfig,
       sqliteFilePath,
-      '获取表列表'
+      'Get table list'
     );
   }
 
@@ -303,7 +303,7 @@ export class SQLiteManager extends BaseManager {
     if (!normalizedQuery.startsWith('select') && !normalizedQuery.startsWith('pragma')) {
       return {
         success: false,
-        error: '只允许执行SELECT和PRAGMA查询'
+        error: 'Only SELECT and PRAGMA queries are allowed'
       };
     }
 
@@ -313,7 +313,7 @@ export class SQLiteManager extends BaseManager {
       },
       siteConfig,
       sqliteFilePath,
-      '查询执行'
+      'Query execution'
     );
   }
 
@@ -335,7 +335,7 @@ export class SQLiteManager extends BaseManager {
     if (!this.sqliteConnections.has(connectionKey)) {
       // 检查文件是否存在
       if (!(await commonFileOperations.fileExists(fullPath))) {
-        throw new Error(`SQLite文件不存在: ${sqliteFilePath}`);
+        throw new Error(`SQLite file does not exist: ${sqliteFilePath}`);
       }
 
       const db = new Database(fullPath);

@@ -60,7 +60,7 @@ export class ContentManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : '获取文件列表失败'
+        error: error instanceof Error ? error.message : 'Failed to retrieve file list'
       };
     }
   }
@@ -141,7 +141,7 @@ export class ContentManager {
       if (!commonFileOperations.isPathAllowed(siteConfig, relativePath)) {
         return {
           success: false,
-          error: '访问被拒绝：文件不在允许的编辑路径内'
+          error: 'Access denied: file is not within allowed editable paths'
         };
       }
 
@@ -167,7 +167,7 @@ export class ContentManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : '获取文件统计信息失败'
+        error: error instanceof Error ? error.message : 'Failed to retrieve file statistics'
       };
     }
   }
@@ -250,7 +250,7 @@ export class ContentManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : '搜索失败'
+        error: error instanceof Error ? error.message : 'Search failed'
       };
     }
   }
@@ -269,7 +269,7 @@ export class ContentManager {
       if (await this.text.textFileExists(siteConfig, relativePath)) {
         return {
           success: false,
-          error: '文件已存在'
+          error: 'File already exists'
         };
       }
 
@@ -280,7 +280,7 @@ export class ContentManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : '创建文件失败'
+        error: error instanceof Error ? error.message : 'Failed to create file'
       };
     }
   }
@@ -295,7 +295,7 @@ export class ContentManager {
       if (!commonFileOperations.isPathAllowed(siteConfig, relativePath)) {
         return {
           success: false,
-          error: '访问被拒绝：目录不在允许的编辑路径内'
+          error: 'Access denied: directory is not within allowed editable paths'
         };
       }
 
@@ -353,7 +353,7 @@ export class ContentManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : '获取目录结构失败'
+        error: error instanceof Error ? error.message : 'Failed to retrieve directory structure'
       };
     }
   }

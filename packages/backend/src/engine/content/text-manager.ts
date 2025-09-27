@@ -2,7 +2,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { SiteConfig, FileOperationResult } from '../types.js';
 import { BaseManager } from './base-manager.js';
-import { logHelpers } from '../../utils/logger.js';
 
 /**
  * 纯文本文件管理器
@@ -27,7 +26,7 @@ export class TextFileManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '读取文件'
+      'Read file'
     );
   }
 
@@ -53,7 +52,7 @@ export class TextFileManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '写入文件'
+      'Write file'
     );
   }
 
@@ -70,7 +69,7 @@ export class TextFileManager extends BaseManager {
         const result = await this.readTextFile(siteConfig, relativePath);
         return { ...result, path: relativePath } as FileOperationResult & { path: string };
       },
-      '批量读取文件'
+      'Batch read files'
     ) as Promise<Array<FileOperationResult & { path: string }>>;
   }
 
@@ -91,7 +90,7 @@ export class TextFileManager extends BaseManager {
         const { exists, fullPath } = await this.checkFileExists(siteConfig, relativePath);
         
         if (!exists) {
-          throw new Error('文件不存在');
+          throw new Error('File does not exist');
         }
 
         await fs.unlink(fullPath);
@@ -103,7 +102,7 @@ export class TextFileManager extends BaseManager {
       },
       siteConfig,
       relativePath,
-      '删除文件'
+      'Delete file'
     );
   }
 
@@ -115,7 +114,7 @@ export class TextFileManager extends BaseManager {
     sourcePath: string, 
     targetPath: string
   ): Promise<FileOperationResult> {
-    return this.performCopyOperation(siteConfig, sourcePath, targetPath, '复制');
+    return this.performCopyOperation(siteConfig, sourcePath, targetPath, 'Copy');
   }
 
   /**
@@ -126,7 +125,7 @@ export class TextFileManager extends BaseManager {
     sourcePath: string, 
     targetPath: string
   ): Promise<FileOperationResult> {
-    return this.performCopyOperation(siteConfig, sourcePath, targetPath, '移动');
+    return this.performCopyOperation(siteConfig, sourcePath, targetPath, 'Move');
   }
 }
 

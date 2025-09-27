@@ -24,7 +24,7 @@ export class ConfigValidator {
 
     return isValid 
       ? { isValid: true }
-      : { isValid: false, error: '访问被拒绝：文件不在允许的编辑路径内' };
+      : { isValid: false, error: 'Access denied: file is not within allowed editable paths' };
   }
 
   /**
@@ -40,7 +40,7 @@ export class ConfigValidator {
     if (!config) {
       return { 
         isValid: false, 
-        error: 'SQLite文件不在允许的编辑列表中' 
+        error: 'SQLite file is not in the allowed editable list' 
       };
     }
 
@@ -59,7 +59,7 @@ export class ConfigValidator {
     if (!tableConfig) {
       return { 
         isValid: false, 
-        error: '表不在允许的编辑列表中' 
+        error: 'Table is not in the allowed editable list' 
       };
     }
 
@@ -84,7 +84,7 @@ export class ConfigValidator {
     if (unauthorizedColumns.length > 0) {
       return { 
         isValid: false, 
-        error: `不允许编辑列: ${unauthorizedColumns.join(', ')}` 
+        error: `Editing columns not allowed: ${unauthorizedColumns.join(', ')}` 
       };
     }
 

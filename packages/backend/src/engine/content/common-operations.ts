@@ -95,7 +95,7 @@ export class CommonFileOperations {
     try {
       return await fs.stat(filePath);
     } catch (error) {
-      throw new Error(`无法获取文件统计信息: ${error instanceof Error ? error.message : '未知错误'}`);
+      throw new Error(`Unable to get file statistics: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
