@@ -244,7 +244,6 @@ class ApiClient {
       if (response.ok) {
         const data = await response.json();
         this.setAccessToken(data.accessToken);
-        this.setRefreshToken(data.refreshToken);
         return true;
       }
       
