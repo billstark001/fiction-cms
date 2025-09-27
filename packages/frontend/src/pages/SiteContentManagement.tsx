@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useRouter, useParams } from '@tanstack/react-router';
 import Layout from '../components/layout/Layout';
 import FileEditor from '../components/editor/FileEditor';
 import { apiClient } from '../api/client';
@@ -29,8 +29,8 @@ interface SiteContentState {
 }
 
 export default function SiteContentManagement() {
-  const { siteId } = useParams<{ siteId: string }>();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { siteId } = useParams({ from: '/sites/$siteId/manage' });
   const [state, setState] = useState<SiteContentState>({
     siteId: siteId || '',
     files: [],
@@ -45,11 +45,11 @@ export default function SiteContentManagement() {
 
   useEffect(() => {
     if (!siteId) {
-      navigate('/sites');
+      router.navigate({ to: '/sites' });
       return;
     }
     loadFiles();
-  }, [siteId, navigate]);
+  }, [siteId, router]);
 
   const loadFiles = async () => {
     if (!siteId) return;
@@ -152,7 +152,7 @@ export default function SiteContentManagement() {
       <div className={pageStyles.header}>
         <div>
           <button
-            onClick={() => navigate('/sites')}
+            onClick={() => router.navigate({ to: '/sites' })}
             className={contentStyles.backButton}
           >
             <ArrowLeftIcon />

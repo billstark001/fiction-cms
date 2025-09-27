@@ -1,4 +1,6 @@
 import { createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { useAuthActions } from './store/authStore';
 
 // Import components
 import Login from './components/auth/Login';
@@ -9,8 +11,15 @@ import SiteManagement from './pages/SiteManagement';
 import SiteContentManagement from './pages/SiteContentManagement';
 import CreateSite from './pages/CreateSite';
 
-// Root route component
+// Root route component with auth check
 const RootComponent = () => {
+  const { checkAuth } = useAuthActions();
+
+  // Check authentication status on app load
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return <Outlet />;
 };
 
