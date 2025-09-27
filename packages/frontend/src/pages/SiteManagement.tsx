@@ -53,7 +53,7 @@ export default function SiteManagement() {
 
       setState(prev => ({
         ...prev,
-        sites: response.sites,
+        sites: response.items,
         total: response.pagination.total,
         totalPages: response.pagination.totalPages,
         loading: false

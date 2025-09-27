@@ -1,83 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Layout from '../components/layout/Layout';
-import { apiClient, Site } from '../api/client';
 import { useAuth } from '../store/authStore';
 import * as layoutStyles from '../components/layout/Layout.css';
 import * as dashboardStyles from './Dashboard.css';
 import * as pageStyles from '../styles/pages.css';
 import * as formStyles from '../styles/forms.css';
+import { useDashboardStore } from '../store/dashboardStore';
 
-interface DashboardStats {
-  totalSites: number;
-  activeSites: number;
-  totalUsers: number;
-  recentActivity: Array<{
-    id: string;
-    type: 'site_created' | 'user_created' | 'deployment';
-    message: string;
-    timestamp: string;
-  }>;
-}
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [sites, setSites] = useState<Site[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalSites: 0,
-    activeSites: 0,
-    totalUsers: 0,
-    recentActivity: []
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const {
+    sites,
+    stats,
+    loading,
+    error,
+    loadData,
+  } = useDashboardStore();
 
   useEffect(() => {
-    loadDashboardData();
+    loadData();
   }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load sites
-      const sitesResponse = await apiClient.getSites({ limit: 10 });
-      setSites(sitesResponse.sites);
-
-      // Calculate stats
-      const activeSites = sitesResponse.sites.filter(site => site.isActive).length;
-      let totalUsers = 0;
-
-      // Try to get user count if user has admin role
-      if (user?.roles?.some(role => role === 'admin')) {
-        try {
-          const usersResponse = await apiClient.getUsers({ limit: 1 });
-          totalUsers = usersResponse.total;
-        } catch {
-          // Ignore error for non-admin users
-        }
-      }
-
-      setStats({
-        totalSites: sitesResponse.pagination.total,
-        activeSites,
-        totalUsers,
-        recentActivity: [
-          {
-            id: '1',
-            type: 'site_created',
-            message: 'Welcome to Fiction CMS',
-            timestamp: new Date().toISOString()
-          }
-        ]
-      });
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -141,18 +85,18 @@ export default function Dashboard() {
         </div>
 
         {sites.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '3rem', 
-            color: '#6b7280' 
+          <div style={{
+            textAlign: 'center',
+            padding: '3rem',
+            color: '#6b7280'
           }}>
             <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No sites yet</h3>
             <p>Create your first site to get started with Fiction CMS.</p>
           </div>
         ) : (
-          <div style={{ 
-            display: 'grid', 
-            gap: '1rem' 
+          <div style={{
+            display: 'grid',
+            gap: '1rem'
           }}>
             {sites.map(site => (
               <div key={site.id} className={dashboardStyles.recentSiteItem}>
@@ -169,7 +113,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className={dashboardStyles.siteItemActions}>
                   <span className={site.isActive ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'} style={{
                     padding: '0.25rem 0.75rem',
@@ -181,7 +125,7 @@ export default function Dashboard() {
                   }}>
                     {site.isActive ? 'Active' : 'Inactive'}
                   </span>
-                  <a 
+                  <a
                     href={`/sites/${site.id}/manage`}
                     className={dashboardStyles.siteItemButton}
                   >

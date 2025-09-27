@@ -726,7 +726,7 @@ engineRoutes.get('/sites/:siteId/deploy',
       const paginatedTasks = allTasks.slice(offset, offset + limit);
 
       return c.json({
-        tasks: paginatedTasks.map(task => ({
+        items: paginatedTasks.map(task => ({
           taskId: task.id,
           status: task.status,
           createdAt: task.createdAt,

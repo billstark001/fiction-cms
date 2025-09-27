@@ -57,7 +57,7 @@ export interface UserSearchParams {
 }
 
 export interface UserSearchResult {
-  users: UserDataWithRoles[];
+  items: UserDataWithRoles[];
   pagination: {
     page: number;
     limit: number;
@@ -204,7 +204,7 @@ export class UserService {
         }));
 
         return {
-          users: usersWithRoles,
+          items: usersWithRoles,
           pagination: {
             page,
             limit,

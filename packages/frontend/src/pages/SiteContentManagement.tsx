@@ -1,47 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter, useParams } from '@tanstack/react-router';
 import Layout from '../components/layout/Layout';
 import FileEditor from '../components/editor/FileEditor';
-import { apiClient } from '../api/client';
+import { createSiteContentStore, useDefaultSiteContentState } from '../store/siteContentStore';
 import { ArrowLeftIcon } from '../components/icons';
 import * as contentStyles from './SiteContentManagement.css';
 import * as pageStyles from '../styles/pages.css';
 import * as formStyles from '../styles/forms.css';
 import * as commonStyles from '../styles/common.css';
 
-interface FileItem {
-  path: string;
-  type: 'markdown' | 'json' | 'sqlite' | 'asset';
-  size: number;
-  lastModified: string;
-}
-
-interface SiteContentState {
-  siteId: string;
-  files: FileItem[];
-  loading: boolean;
-  error: string | null;
-  selectedFile: string | null;
-  fileContent: string | null;
-  loadingContent: boolean;
-  searchQuery: string;
-  filterType: string;
-}
-
 export default function SiteContentManagement() {
   const router = useRouter();
   const { siteId } = useParams({ from: '/sites/$siteId/manage' });
-  const [state, setState] = useState<SiteContentState>({
-    siteId: siteId || '',
-    files: [],
-    loading: true,
-    error: null,
-    selectedFile: null,
-    fileContent: null,
-    loadingContent: false,
-    searchQuery: '',
-    filterType: 'all'
-  });
+
+  // Create store instance for this specific siteId
+  const useStore = useMemo(() => {
+    if (!siteId) return null;
+    return createSiteContentStore(siteId);
+  }, [siteId]);
+
+  // Use the store
+  const {
+    files,
+    loading,
+    error,
+    selectedFile,
+    fileContent,
+    loadingContent,
+    searchQuery,
+    filterType,
+    loadFiles,
+    loadFileContent,
+    saveFile,
+    setSearchQuery,
+    setFilterType,
+    clearError,
+    getFilteredFiles
+  } = useStore?.() ?? useDefaultSiteContentState();
 
   useEffect(() => {
     if (!siteId) {
@@ -49,70 +44,9 @@ export default function SiteContentManagement() {
       return;
     }
     loadFiles();
-  }, [siteId, router]);
+  }, [siteId, router, loadFiles]);
 
-  const loadFiles = async () => {
-    if (!siteId) return;
-
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      const response = await apiClient.getEditableFiles(siteId);
-      setState(prev => ({
-        ...prev,
-        files: response.files,
-        loading: false
-      }));
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to load files',
-        loading: false
-      }));
-    }
-  };
-
-  const loadFileContent = async (filePath: string) => {
-    if (!siteId) return;
-
-    try {
-      setState(prev => ({ ...prev, loadingContent: true }));
-      const response = await apiClient.getFileContent(siteId, filePath);
-      setState(prev => ({
-        ...prev,
-        fileContent: response.content,
-        selectedFile: filePath,
-        loadingContent: false
-      }));
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to load file content',
-        loadingContent: false
-      }));
-    }
-  };
-
-  const handleSaveFile = async (content: string, commitMessage?: string) => {
-    if (!siteId || !state.selectedFile) return;
-
-    try {
-      await apiClient.updateFileContent(siteId, state.selectedFile, content, commitMessage);
-      setState(prev => ({ ...prev, fileContent: content }));
-      // Show success message (you could add a toast notification here)
-      console.log('File saved successfully');
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to save file'
-      }));
-    }
-  };
-
-  const filteredFiles = state.files.filter(file => {
-    const matchesSearch = file.path.toLowerCase().includes(state.searchQuery.toLowerCase());
-    const matchesFilter = state.filterType === 'all' || file.type === state.filterType;
-    return matchesSearch && matchesFilter;
-  });
+  const filteredFiles = getFilteredFiles();
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -137,7 +71,12 @@ export default function SiteContentManagement() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  if (state.loading) {
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilterType('all');
+  };
+
+  if (!useStore || loading) {
     return (
       <Layout>
         <div className={commonStyles.loadingContainer}>
@@ -165,11 +104,11 @@ export default function SiteContentManagement() {
         </div>
       </div>
 
-      {state.error && (
+      {error && (
         <div className={formStyles.errorMessage}>
-          {state.error}
+          {error}
           <button
-            onClick={() => setState(prev => ({ ...prev, error: null }))}
+            onClick={clearError}
             className={contentStyles.errorDismissButton}
           >
             Dismiss
@@ -192,13 +131,13 @@ export default function SiteContentManagement() {
             <input
               type="text"
               placeholder="Search files..."
-              value={state.searchQuery}
-              onChange={(e) => setState(prev => ({ ...prev, searchQuery: e.target.value }))}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className={formStyles.input}
             />
             <select
-              value={state.filterType}
-              onChange={(e) => setState(prev => ({ ...prev, filterType: e.target.value }))}
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
               className={formStyles.select}
             >
               <option value="all">All Types</option>
@@ -214,9 +153,9 @@ export default function SiteContentManagement() {
             {filteredFiles.length === 0 ? (
               <div className={contentStyles.fileListEmpty}>
                 <p>No files found</p>
-                {state.searchQuery && (
+                {searchQuery && (
                   <button
-                    onClick={() => setState(prev => ({ ...prev, searchQuery: '', filterType: 'all' }))}
+                    onClick={handleClearFilters}
                     className={formStyles.secondaryButton}
                   >
                     Clear filters
@@ -229,7 +168,7 @@ export default function SiteContentManagement() {
                   <div
                     key={file.path}
                     onClick={() => loadFileContent(file.path)}
-                    className={`${contentStyles.fileItem} ${state.selectedFile === file.path ? contentStyles.fileItemSelected : ''
+                    className={`${contentStyles.fileItem} ${selectedFile === file.path ? contentStyles.fileItemSelected : ''
                       }`}
                   >
                     <span className={contentStyles.fileIcon}>
@@ -253,25 +192,25 @@ export default function SiteContentManagement() {
 
         {/* File Editor */}
         <div className={`${pageStyles.card} ${contentStyles.editorCard}`}>
-          {state.selectedFile ? (
+          {selectedFile ? (
             <>
               <div className={pageStyles.cardHeader}>
-                <h2 className={pageStyles.cardTitle}>{state.selectedFile}</h2>
+                <h2 className={pageStyles.cardTitle}>{selectedFile}</h2>
                 <p className={pageStyles.cardDescription}>
-                  {state.files.find(f => f.path === state.selectedFile)?.type} file
+                  {files.find(f => f.path === selectedFile)?.type} file
                 </p>
               </div>
 
-              {state.loadingContent ? (
+              {loadingContent ? (
                 <div className={contentStyles.editorPlaceholder}>
                   Loading file content...
                 </div>
               ) : (
                 <FileEditor
-                  filePath={state.selectedFile}
-                  fileType={state.files.find(f => f.path === state.selectedFile)?.type || 'asset'}
-                  content={state.fileContent || ''}
-                  onSave={handleSaveFile}
+                  filePath={selectedFile}
+                  fileType={files.find(f => f.path === selectedFile)?.type || 'asset'}
+                  content={fileContent || ''}
+                  onSave={saveFile}
                 />
               )}
             </>

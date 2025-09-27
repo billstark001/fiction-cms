@@ -1,109 +1,81 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Layout from '../components/layout/Layout';
-import { apiClient, User, Role, CreateUserRequest } from '../api/client';
-import { 
-  TableContainer, 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableRow, 
-  TableHead, 
-  TableCell, 
-  TableEmptyState 
+import {
+  TableContainer,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableEmptyState
 } from '../components/ui';
 import * as layoutStyles from '../components/layout/Layout.css';
 import * as pageStyles from './UserManagement.css';
 import * as formStyles from '../styles/forms.css';
 import * as tableStyles from '../styles/table.css';
+import { useRoles, useUserOperations, useUsers } from '../hooks/useUsers';
+import { useForm } from 'react-hook-form';
+
+interface UserFormData {
+  username: string;
+  email: string;
+  password: string;
+  displayName: string;
+  roleIds: string[];
+};
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const qUsers = useUsers();
+  const qRoles = useRoles();
+
+  const users = qUsers.data?.items || [];
+  const roles = qRoles.data?.items || [];
+
+  const loading = qUsers.isLoading || qRoles.isLoading;
+  const [oprError, setOprError] = useState<Error | null>(null);
+  const [showError, setShowError] = useState(false);
+  const error = oprError || qUsers.error || qRoles.error;
+
+
+  const { createUser, deleteUser } = useUserOperations();
+
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    displayName: '',
-    roleIds: [] as string[]
-  });
+  const form = useForm<UserFormData>();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { register, handleSubmit, reset, watch, setValue } = form;
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const { roleIds } = watch();
 
-      const [usersResponse, rolesResponse] = await Promise.all([
-        apiClient.getUsers(),
-        apiClient.getRoles()
-      ]);
-
-      setUsers(usersResponse.users);
-      setRoles(rolesResponse);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const userData: CreateUserRequest = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        displayName: formData.displayName || undefined,
-        roleIds: formData.roleIds.length > 0 ? formData.roleIds : undefined
-      };
-
-      await apiClient.createUser(userData);
-      await loadData();
-      setShowCreateForm(false);
-      resetForm();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create user');
-    }
+  const handleCreateUser = async (formData: UserFormData) => {
+    await createUser.mutateAsync(formData, {
+      onError: (err) => {
+        setOprError(err);
+        setShowError(true);
+      }
+    });
   };
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
-    try {
-      await apiClient.deleteUser(userId);
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete user');
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      username: '',
-      email: '',
-      password: '',
-      displayName: '',
-      roleIds: []
+    await deleteUser.mutateAsync(userId, {
+      onError: (err) => {
+        setOprError(err);
+        setShowError(true);
+      }
     });
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className={layoutStyles.pageTitle} style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div className={layoutStyles.pageTitle} style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           height: '200px',
           color: '#6b7280'
         }}>
@@ -115,12 +87,12 @@ export default function UserManagement() {
 
   return (
     <Layout>
-      {error && (
+      {error && showError && (
         <div className={formStyles.errorMessage}>
-          {error}
-          <button 
-            onClick={() => setError(null)}
-            style={{ 
+          {error.message}
+          <button
+            onClick={() => setShowError(false)}
+            style={{
               float: 'right',
               background: 'none',
               border: 'none',
@@ -143,7 +115,7 @@ export default function UserManagement() {
             </p>
           </div>
 
-          <form onSubmit={handleCreateUser} className={formStyles.form}>
+          <form onSubmit={handleSubmit(handleCreateUser)} className={formStyles.form}>
             <div className={pageStyles.userFormGrid}>
               <div className={formStyles.formGroup}>
                 <label className={formStyles.label}>
@@ -151,9 +123,7 @@ export default function UserManagement() {
                 </label>
                 <input
                   type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
+                  {...register('username', { required: true })}
                   className={formStyles.input}
                 />
               </div>
@@ -164,9 +134,7 @@ export default function UserManagement() {
                 </label>
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
+                  {...register('email', { required: true })}
                   className={formStyles.input}
                 />
               </div>
@@ -179,9 +147,7 @@ export default function UserManagement() {
                 </label>
                 <input
                   type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
+                  {...register('password', { required: true })}
                   className={formStyles.input}
                 />
               </div>
@@ -192,8 +158,7 @@ export default function UserManagement() {
                 </label>
                 <input
                   type="text"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                  {...register('displayName')}
                   className={formStyles.input}
                 />
               </div>
@@ -208,18 +173,12 @@ export default function UserManagement() {
                   <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="checkbox"
-                      checked={formData.roleIds.includes(role.id)}
+                      checked={roleIds.includes(role.id)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setFormData({ 
-                            ...formData, 
-                            roleIds: [...formData.roleIds, role.id] 
-                          });
+                          setValue('roleIds', [...roleIds, role.id]);
                         } else {
-                          setFormData({ 
-                            ...formData, 
-                            roleIds: formData.roleIds.filter(id => id !== role.id) 
-                          });
+                          setValue('roleIds', roleIds.filter(id => id !== role.id));
                         }
                       }}
                     />
@@ -232,7 +191,7 @@ export default function UserManagement() {
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
               <button
                 type="button"
-                onClick={() => { setShowCreateForm(false); resetForm(); }}
+                onClick={() => { setShowCreateForm(false); reset(); }}
                 style={{
                   padding: '0.5rem 1rem',
                   border: '1px solid #d1d5db',
@@ -281,9 +240,9 @@ export default function UserManagement() {
         </div>
 
         {users.length === 0 ? (
-          <TableEmptyState 
-            title="No users found" 
-            description="Create your first user to get started." 
+          <TableEmptyState
+            title="No users found"
+            description="Create your first user to get started."
           />
         ) : (
           <TableContainer>

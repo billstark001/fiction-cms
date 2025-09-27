@@ -30,7 +30,7 @@ roleRoutes.get('/', requirePermission('user.read'), validateQuery(paginationSche
     }));
 
     return c.json({
-      roles: rolesWithPermissions,
+      items: rolesWithPermissions,
       pagination: {
         page: 1,
         limit: allRoles.length,

@@ -32,7 +32,7 @@ userRoutes.get('/', requirePermission('user.read'), validateQuery(paginationSche
     });
 
     return c.json({
-      users: result.users,
+      items: result.items,
       pagination: result.pagination
     });
   } catch (error) {

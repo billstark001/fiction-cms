@@ -117,7 +117,7 @@ siteRoutes.get('/', requirePermission('site.read'), validateQuery(paginationSche
     const total = totalResult.length;
 
     return c.json({
-      sites: sitesData.map(site => ({
+      items: sitesData.map(site => ({
         ...site,
         editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : []
       })),

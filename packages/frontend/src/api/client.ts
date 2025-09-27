@@ -19,6 +19,18 @@ export interface ErrorResponse {
   }>;
 }
 
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number; 
+}
+
+export interface PaginationResponse<T> {
+  items: T[];
+  pagination: PaginationInfo;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -51,16 +63,6 @@ export interface Site {
   localPath: string;
   createdAt: string;
   isActive: boolean;
-}
-
-export interface SitesResponse {
-  sites: Site[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
 }
 
 export interface CreateUserRequest {
@@ -282,14 +284,9 @@ class ApiClient {
   }
 
   // User management endpoints
-  async getUsers(params?: { page?: number; limit?: number; search?: string }): Promise<{
-    users: User[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async getUsers(params?: { page?: number; limit?: number; search?: string }): Promise<PaginationResponse<User>> {
     const queryString = params ? new URLSearchParams(params as any).toString() : '';
-    return this.request<any>(`/users${queryString ? `?${queryString}` : ''}`);
+    return this.request<PaginationResponse<User>>(`/users${queryString ? `?${queryString}` : ''}`);
   }
 
   async getUserById(id: string): Promise<User> {
@@ -315,8 +312,8 @@ class ApiClient {
   }
 
   // Role management endpoints
-  async getRoles(): Promise<Role[]> {
-    return this.request<Role[]>('/roles');
+  async getRoles(): Promise<PaginationResponse<Role>> {
+    return this.request<PaginationResponse<Role>>('/roles');
   }
 
   async createRole(roleData: Omit<Role, 'id'>): Promise<Role> {
@@ -327,7 +324,7 @@ class ApiClient {
   }
 
   // Site management endpoints
-  async getSites(params?: { page?: number; limit?: number; q?: string }): Promise<SitesResponse> {
+  async getSites(params?: { page?: number; limit?: number; q?: string }): Promise<PaginationResponse<Site>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.limit) queryParams.set('limit', params.limit.toString());
@@ -336,7 +333,7 @@ class ApiClient {
     const queryString = queryParams.toString();
     const url = queryString ? `/sites?${queryString}` : '/sites';
     
-    return this.request<SitesResponse>(url);
+    return this.request<PaginationResponse<Site>>(url);
   }
 
   async getSiteById(id: string): Promise<Site> {
