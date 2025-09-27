@@ -1,5 +1,6 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth, useAuthActions } from '../../store/authStore';
+import { Link, useRouter } from '@tanstack/react-router';
+import { useAuth } from '../../store/authStore';
+import { useLogout } from '../../hooks/useAuth';
 import * as styles from './Layout.css';
 
 interface LayoutProps {
@@ -20,14 +21,18 @@ const navItems: NavItem[] = [
 ];
 
 export default function Layout({ children }: LayoutProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { user } = useAuth();
-  const { logout } = useAuthActions();
+  const logoutMutation = useLogout();
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logoutMutation.mutateAsync();
+      router.navigate({ to: '/login' });
+    } catch (error) {
+      // Error is handled by the mutation
+      console.error('Logout error:', error);
+    }
   };
 
   // Filter nav items based on user roles
@@ -37,6 +42,7 @@ export default function Layout({ children }: LayoutProps) {
   });
 
   const primaryRole = user?.roles?.[0] || 'User';
+  const currentPath = router.state.location.pathname;
 
   return (
     <div className={styles.layout}>
@@ -48,7 +54,7 @@ export default function Layout({ children }: LayoutProps) {
             <Link
               key={item.path}
               to={item.path}
-              className={location.pathname === item.path ? styles.navItemActive : styles.navItem}
+              className={currentPath === item.path ? styles.navItemActive : styles.navItem}
             >
               {item.label}
             </Link>
@@ -61,8 +67,12 @@ export default function Layout({ children }: LayoutProps) {
             <div className={styles.userName}>{user?.displayName || user?.username}</div>
             <div className={styles.userRole}>{primaryRole}</div>
           </div>
-          <button onClick={handleLogout} className={styles.logoutButton}>
-            Logout
+          <button 
+            onClick={handleLogout} 
+            className={styles.logoutButton}
+            disabled={logoutMutation.isPending}
+          >
+            {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
           </button>
         </div>
       </aside>
@@ -71,10 +81,10 @@ export default function Layout({ children }: LayoutProps) {
         <div className={styles.header}>
           <div>
             <h1 className={styles.pageTitle}>
-              {getPageTitle(location.pathname)}
+              {getPageTitle(currentPath)}
             </h1>
             <p className={styles.pageDescription}>
-              {getPageDescription(location.pathname)}
+              {getPageDescription(currentPath)}
             </p>
           </div>
           

@@ -1,53 +1,70 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearch } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
+import { useLogin } from '../../hooks/useAuth';
 import * as styles from './Login.css';
 
-interface LocationState {
-  from?: {
-    pathname: string;
-  };
+interface LoginFormData {
+  username: string;
+  password: string;
+}
+
+interface LoginSearchParams {
+  redirect?: string;
 }
 
 export default function Login() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const search = useSearch({ from: '/login' }) as LoginSearchParams;
+  const redirectTo = search.redirect || '/dashboard';
   
   const { isAuthenticated, isLoading, error } = useAuthStore();
-  const { login, clearError } = useAuthStore();
+  const { clearError } = useAuthStore();
+  const loginMutation = useLogin();
   
-  const state = location.state as LocationState;
-  const from = state?.from?.pathname || '/dashboard';
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+  } = useForm<LoginFormData>({
+    mode: 'onChange',
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
+
+  // Watch form values to clear errors when they change
+  const watchedValues = watch();
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      router.navigate({ to: redirectTo });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, router, redirectTo]);
 
-  // Clear error when component mounts or form changes
+  // Clear error when form changes
   useEffect(() => {
     clearError();
-  }, [clearError, username, password]);
+  }, [clearError, watchedValues.username, watchedValues.password]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!username.trim() || !password.trim()) {
-      return;
-    }
-
-    const success = await login({ username: username.trim(), password });
-    
-    if (success) {
-      navigate(from, { replace: true });
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      await loginMutation.mutateAsync({
+        username: data.username.trim(),
+        password: data.password,
+      });
+      // Navigation will be handled by the useEffect above
+    } catch (error) {
+      // Error is handled by the mutation
+      console.error('Login failed:', error);
     }
   };
+
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className={styles.loginContainer}>
@@ -57,13 +74,13 @@ export default function Login() {
           <p className={styles.loginSubtitle}>Sign in to manage your content</p>
         </div>
 
-        {error && (
+        {(error || loginMutation.error) && (
           <div className={styles.errorMessage}>
-            {error}
+            {error || (loginMutation.error as Error)?.message || 'Login failed'}
           </div>
         )}
 
-        <form className={styles.loginForm} onSubmit={handleSubmit}>
+        <form className={styles.loginForm} onSubmit={handleSubmit(onSubmit)}>
           <div className={styles.formGroup}>
             <label htmlFor="username" className={styles.label}>
               Username
@@ -71,14 +88,20 @@ export default function Login() {
             <input
               id="username"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              {...register('username', {
+                required: 'Username is required',
+                validate: value => value.trim().length > 0 || 'Username cannot be empty'
+              })}
               className={styles.input}
               placeholder="Enter your username"
-              disabled={isLoading}
+              disabled={isLoading || loginMutation.isPending}
               autoComplete="username"
-              required
             />
+            {errors.username && (
+              <div className={styles.errorMessage}>
+                {errors.username.message}
+              </div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -89,31 +112,37 @@ export default function Login() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                {...register('password', {
+                  required: 'Password is required',
+                  validate: value => value.trim().length > 0 || 'Password cannot be empty'
+                })}
                 className={styles.input}
                 placeholder="Enter your password"
-                disabled={isLoading}
+                disabled={isLoading || loginMutation.isPending}
                 autoComplete="current-password"
-                required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className={styles.passwordToggleButton}
-                disabled={isLoading}
+                disabled={isLoading || loginMutation.isPending}
               >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
+            {errors.password && (
+              <div className={styles.errorMessage}>
+                {errors.password.message}
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
             className={styles.primaryButton}
-            disabled={isLoading || !username.trim() || !password.trim()}
+            disabled={isLoading || loginMutation.isPending || !isValid}
           >
-            {isLoading ? (
+            {(isLoading || loginMutation.isPending) ? (
               <>
                 <span className={styles.loadingSpinner}></span>
                 Signing in...
