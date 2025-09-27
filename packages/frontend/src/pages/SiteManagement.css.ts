@@ -1,110 +1,103 @@
 import { style } from '@vanilla-extract/css';
 
-// Site management 专用样式
-export const siteManagementContainer = style({});
-
+// Search container
 export const siteSearchContainer = style({
   marginBottom: '1.5rem',
 });
 
+// Grid layout
 export const siteGrid = style({
   display: 'grid',
   gap: '1rem',
 });
 
-export const siteCard = style({
-  padding: '1rem',
+// Site item card
+export const siteItem = style({
+  padding: '1.5rem',
   border: '1px solid #e5e7eb',
-  borderRadius: '0.375rem',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  borderRadius: '0.5rem',
   transition: 'all 0.15s ease-in-out',
-  
+  cursor: 'pointer',
+
   selectors: {
     '&:hover': {
-      backgroundColor: '#f9fafb',
-      cursor: 'pointer',
+      borderColor: '#d1d5db',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     },
   },
 });
 
-export const siteInfo = style({
+// Site header layout
+export const siteItemHeader = style({
   display: 'flex',
-  flexDirection: 'column',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: '1rem',
+});
+
+export const siteItemInfo = style({
   flex: 1,
 });
 
-export const siteTitle = style({
+export const siteItemTitle = style({
   fontSize: '1.125rem',
-  fontWeight: 'medium',
+  fontWeight: '600',
   color: '#111827',
-  marginBottom: '0.25rem',
-  textDecoration: 'none',
+  margin: '0 0 0.5rem 0',
 });
 
-export const siteDescription = style({
+export const siteItemDescription = style({
   fontSize: '0.875rem',
   color: '#6b7280',
-  marginBottom: '0.5rem',
+  margin: '0 0 0.5rem 0',
 });
 
-export const siteMeta = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-  gap: '0.5rem',
-  fontSize: '0.75rem',
-  color: '#9ca3af',
-});
-
-export const siteMetaItem = style({
+// Actions area
+export const siteItemActions = style({
   display: 'flex',
   alignItems: 'center',
-  gap: '0.25rem',
+  gap: '0.75rem',
 });
 
-export const siteActions = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.5rem',
-  alignItems: 'flex-end',
-});
-
-export const siteStatusBadge = style({
-  fontSize: '0.75rem',
-  padding: '0.125rem 0.5rem',
+// Status badges
+export const statusBadge = style({
+  padding: '0.25rem 0.75rem',
   borderRadius: '9999px',
+  fontSize: '0.75rem',
   fontWeight: 'medium',
 });
 
-export const siteStatusActive = style([siteStatusBadge, {
+export const statusBadgeActive = style([statusBadge, {
   backgroundColor: '#dcfce7',
   color: '#166534',
 }]);
 
-export const siteStatusInactive = style([siteStatusBadge, {
+export const statusBadgeInactive = style([statusBadge, {
   backgroundColor: '#fee2e2',
   color: '#991b1b',
 }]);
 
-export const siteActionButton = style({
-  padding: '0.25rem 0.75rem',
+// Buttons
+export const button = style({
+  padding: '0.5rem 1rem',
+  border: '1px solid #d1d5db',
+  borderRadius: '0.375rem',
   fontSize: '0.75rem',
   fontWeight: 'medium',
-  borderRadius: '0.25rem',
-  border: '1px solid #d1d5db',
-  backgroundColor: 'white',
-  color: '#374151',
   cursor: 'pointer',
   transition: 'all 0.15s ease-in-out',
-  textDecoration: 'none',
-  
+});
+
+export const manageButton = style([button, {
+  backgroundColor: '#f3f4f6',
+  color: '#374151',
+
   selectors: {
     '&:hover': {
-      backgroundColor: '#f9fafb',
+      backgroundColor: '#e5e7eb',
     },
   },
-});
+}]);
 
 export const createSiteButton = style({
   padding: '0.75rem 1.5rem',
@@ -116,8 +109,7 @@ export const createSiteButton = style({
   fontWeight: 'medium',
   cursor: 'pointer',
   transition: 'background-color 0.15s ease-in-out',
-  textDecoration: 'none',
-  
+
   selectors: {
     '&:hover': {
       backgroundColor: '#1d4ed8',
@@ -125,6 +117,83 @@ export const createSiteButton = style({
   },
 });
 
+// Site metadata
+export const siteItemMeta = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+  gap: '1rem',
+  fontSize: '0.75rem',
+  color: '#6b7280',
+});
+
+export const siteMetaText = style({
+  fontWeight: 'medium',
+});
+
+export const siteCodeBlock = style({
+  backgroundColor: '#f3f4f6',
+  padding: '0.125rem 0.25rem',
+  borderRadius: '0.25rem',
+  fontFamily: 'monospace',
+});
+
+// External link
+export const externalLink = style({
+  color: '#2563eb',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+
+  selectors: {
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+});
+
+// Pagination
+export const paginationContainer = style({
+  marginTop: '2rem',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '0.5rem',
+});
+
+export const paginationButton = style({
+  padding: '0.5rem 0.75rem',
+  border: 'none',
+  borderRadius: '0.375rem',
+  fontSize: '0.875rem',
+  cursor: 'pointer',
+  transition: 'background-color 0.15s ease-in-out',
+});
+
+export const paginationButtonEnabled = style([paginationButton, {
+  backgroundColor: '#2563eb',
+  color: 'white',
+
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#1d4ed8',
+    },
+  },
+}]);
+
+export const paginationButtonDisabled = style([paginationButton, {
+  backgroundColor: '#f3f4f6',
+  color: '#9ca3af',
+  cursor: 'not-allowed',
+}]);
+
+export const paginationInfo = style({
+  padding: '0.5rem 1rem',
+  fontSize: '0.875rem',
+  color: '#374151',
+});
+
+// Empty state
 export const emptyStateContainer = style({
   textAlign: 'center',
   padding: '3rem',
@@ -140,7 +209,7 @@ export const emptyStateText = style({
   margin: 0,
 });
 
-// Loading state
+// Loading states
 export const loadingContainer = style({
   display: 'flex',
   alignItems: 'center',
@@ -149,59 +218,16 @@ export const loadingContainer = style({
   color: '#6b7280',
 });
 
-// Site detail metadata
-export const siteDetailMeta = style({
+export const loadingOverlay = style({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(255, 255, 255, 0.8)',
   display: 'flex',
   alignItems: 'center',
-  gap: '0.75rem',
-});
-
-export const statusDot = style({
-  width: '8px',
-  height: '8px',
-  borderRadius: '50%',
-  flexShrink: 0,
-});
-
-export const statusDotActive = style([statusDot, {
-  backgroundColor: '#16a34a',
-}]);
-
-export const statusDotInactive = style([statusDot, {
-  backgroundColor: '#dc2626',
-}]);
-
-export const inlineCode = style({
-  backgroundColor: '#f3f4f6',
-  padding: '0.125rem 0.375rem',
-  borderRadius: '0.25rem',
-  fontSize: '0.875rem',
-  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-});
-
-export const metaLabel = style({
-  fontWeight: 'medium',
-});
-
-// Action buttons container
-export const actionButtonsContainer = style({
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '1rem',
-  marginTop: '2rem',
-});
-
-// External link style
-export const externalLink = style({
-  color: '#2563eb',
-  textDecoration: 'none',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.25rem',
-  
-  selectors: {
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
+  justifyContent: 'center',
+  zIndex: 1000,
+  color: '#6b7280',
 });

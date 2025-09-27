@@ -50,7 +50,7 @@ export default function SiteManagement() {
       }
 
       const response = await apiClient.getSites(params);
-      
+
       setState(prev => ({
         ...prev,
         sites: response.sites,
@@ -68,8 +68,8 @@ export default function SiteManagement() {
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       searchQuery: e.target.value,
       page: 1 // Reset to first page when searching
     }));
@@ -134,68 +134,36 @@ export default function SiteManagement() {
 
         {/* Sites List */}
         {state.sites.length === 0 && !state.loading ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '3rem', 
-            color: '#6b7280' 
-          }}>
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
+          <div className={siteStyles.emptyStateContainer}>
+            <h3 className={siteStyles.emptyStateTitle}>
               {state.searchQuery ? 'No sites found' : 'No sites yet'}
             </h3>
-            <p>
-              {state.searchQuery 
+            <p className={siteStyles.emptyStateText}>
+              {state.searchQuery
                 ? 'Try adjusting your search terms.'
                 : 'Create your first site to get started with content management.'
               }
             </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
+          <div className={siteStyles.siteGrid}>
             {state.sites.map(site => (
-              <div 
+              <div
                 key={site.id}
-                style={{
-                  padding: '1.5rem',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
-                  transition: 'all 0.15s ease-in-out',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className={siteStyles.siteItem}
                 onClick={() => handleManageSite(site.id)}
               >
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: '1rem'
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ 
-                      fontSize: '1.125rem', 
-                      fontWeight: '600', 
-                      color: '#111827', 
-                      margin: '0 0 0.5rem 0' 
-                    }}>
+                <div className={siteStyles.siteItemHeader}>
+                  <div className={siteStyles.siteItemInfo}>
+                    <h3 className={siteStyles.siteItemTitle}>
                       {site.name}
                     </h3>
-                    <p style={{ 
-                      fontSize: '0.875rem', 
-                      color: '#6b7280', 
-                      margin: '0 0 0.5rem 0' 
-                    }}>
+                    <p className={siteStyles.siteItemDescription}>
                       {site.description || 'No description'}
                     </p>
-                    <a 
-                      href={site.githubRepositoryUrl} 
-                      target="_blank" 
+                    <a
+                      href={site.githubRepositoryUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
                       className={siteStyles.externalLink}
@@ -204,16 +172,9 @@ export default function SiteManagement() {
                       <ExternalLinkIcon />
                     </a>
                   </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.75rem',
-                      fontWeight: 'medium',
-                      backgroundColor: site.isActive ? '#dcfce7' : '#fee2e2',
-                      color: site.isActive ? '#166534' : '#991b1b'
-                    }}>
+
+                  <div className={siteStyles.siteItemActions}>
+                    <span className={site.isActive ? siteStyles.statusBadgeActive : siteStyles.statusBadgeInactive}>
                       {site.isActive ? 'Active' : 'Inactive'}
                     </span>
                     <button
@@ -221,23 +182,7 @@ export default function SiteManagement() {
                         e.stopPropagation();
                         handleManageSite(site.id);
                       }}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#f3f4f6',
-                        color: '#374151',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: 'medium',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease-in-out',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#e5e7eb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                      }}
+                      className={siteStyles.manageButton}
                     >
                       Manage
                     </button>
@@ -245,26 +190,15 @@ export default function SiteManagement() {
                 </div>
 
                 {/* Site Info */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: '1rem',
-                  fontSize: '0.75rem',
-                  color: '#6b7280'
-                }}>
+                <div className={siteStyles.siteItemMeta}>
                   <div>
-                    <span style={{ fontWeight: 'medium' }}>Local Path:</span>{' '}
-                    <code style={{ 
-                      backgroundColor: '#f3f4f6', 
-                      padding: '0.125rem 0.25rem', 
-                      borderRadius: '0.25rem',
-                      fontFamily: 'monospace'
-                    }}>
+                    <span className={siteStyles.siteMetaText}>Local Path:</span>{' '}
+                    <code className={siteStyles.siteCodeBlock}>
                       {site.localPath}
                     </code>
                   </div>
                   <div>
-                    <span style={{ fontWeight: 'medium' }}>Created:</span>{' '}
+                    <span className={siteStyles.siteMetaText}>Created:</span>{' '}
                     {new Date(site.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -275,51 +209,23 @@ export default function SiteManagement() {
 
         {/* Pagination */}
         {state.totalPages > 1 && (
-          <div style={{ 
-            marginTop: '2rem',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+          <div className={siteStyles.paginationContainer}>
             <button
               onClick={() => handlePageChange(state.page - 1)}
               disabled={state.page <= 1}
-              style={{
-                padding: '0.5rem 0.75rem',
-                backgroundColor: state.page <= 1 ? '#f3f4f6' : '#2563eb',
-                color: state.page <= 1 ? '#9ca3af' : 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                cursor: state.page <= 1 ? 'not-allowed' : 'pointer',
-                transition: 'background-color 0.15s ease-in-out',
-              }}
+              className={state.page <= 1 ? siteStyles.paginationButtonDisabled : siteStyles.paginationButtonEnabled}
             >
               Previous
             </button>
-            
-            <span style={{ 
-              padding: '0.5rem 1rem',
-              fontSize: '0.875rem',
-              color: '#374151'
-            }}>
+
+            <span className={siteStyles.paginationInfo}>
               Page {state.page} of {state.totalPages}
             </span>
-            
+
             <button
               onClick={() => handlePageChange(state.page + 1)}
               disabled={state.page >= state.totalPages}
-              style={{
-                padding: '0.5rem 0.75rem',
-                backgroundColor: state.page >= state.totalPages ? '#f3f4f6' : '#2563eb',
-                color: state.page >= state.totalPages ? '#9ca3af' : 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                cursor: state.page >= state.totalPages ? 'not-allowed' : 'pointer',
-                transition: 'background-color 0.15s ease-in-out',
-              }}
+              className={state.page >= state.totalPages ? siteStyles.paginationButtonDisabled : siteStyles.paginationButtonEnabled}
             >
               Next
             </button>
@@ -329,19 +235,7 @@ export default function SiteManagement() {
 
       {/* Loading overlay */}
       {state.loading && state.sites.length > 0 && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          color: '#6b7280'
-        }}>
+        <div className={siteStyles.loadingOverlay}>
           Loading...
         </div>
       )}
