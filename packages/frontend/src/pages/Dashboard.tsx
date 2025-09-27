@@ -56,7 +56,7 @@ export default function Dashboard() {
       }
 
       setStats({
-        totalSites: sitesResponse.total,
+        totalSites: sitesResponse.pagination.total,
         activeSites,
         totalUsers,
         recentActivity: [
