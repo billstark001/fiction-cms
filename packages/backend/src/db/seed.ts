@@ -3,6 +3,7 @@ import { roles, permissions, rolePermissions, users, userRoles, refreshTokens, u
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { loggers, logHelpers } from '../utils/logger.js';
+import { userService, roleService } from '../services/index.js';
 
 const defaultRoles = [
   {
@@ -155,27 +156,18 @@ export async function seedDatabase() {
     const existingUsers = await db.select().from(users).limit(1);
     if (existingUsers.length === 0) {
       loggers.database.info('Creating default admin user');
-      const passwordHash = await bcrypt.hash('admin123', 10);
       
-      const adminUser = await db.insert(users)
-        .values({
-          username: 'admin',
-          email: 'admin@fictioncms.local',
-          passwordHash,
-          displayName: 'System Administrator',
-          isActive: true
-        })
-        .returning()
-        .get();
+      const adminUser = await userService.createUser({
+        username: 'admin',
+        email: 'admin@fictioncms.local',
+        password: 'admin123',
+        displayName: 'System Administrator',
+        isActive: true
+      });
 
-      const adminRole = await db.select().from(roles).where(eq(roles.name, 'admin')).get();
+      const adminRole = await roleService.findRoleByName('admin');
       if (adminRole) {
-        await db.insert(userRoles)
-          .values({
-            userId: adminUser.id,
-            roleId: adminRole.id
-          })
-          .run();
+        await userService.assignRolesToUser(adminUser.id, [adminRole.id]);
       }
 
       loggers.database.info({

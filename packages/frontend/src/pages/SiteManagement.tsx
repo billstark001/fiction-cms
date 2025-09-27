@@ -79,7 +79,7 @@ export default function SiteManagement() {
     navigate(`/sites/${siteId}/manage`);
   };
 
-  const isAdmin = user?.roles?.some(role => role.name === 'admin') ?? false;
+  const isAdmin = user?.roles?.some(role => role === 'admin') ?? false;
 
   if (state.loading && state.sites.length === 0) {
     return (

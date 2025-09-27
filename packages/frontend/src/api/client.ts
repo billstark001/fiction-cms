@@ -25,13 +25,8 @@ export interface User {
   email: string;
   displayName?: string | null;
   isActive: boolean;
-  createdAt: string;
-  lastLoginAt?: string | null;
-  roles: Array<{
-    id: string;
-    name: string;
-    displayName: string;
-  }>;
+  roles: string[];
+  permissions: string[];
 }
 
 export interface LoginRequest {

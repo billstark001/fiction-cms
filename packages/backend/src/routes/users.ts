@@ -1,10 +1,7 @@
 import { Hono } from 'hono';
-import bcrypt from 'bcryptjs';
-import { db } from '../db/index.js';
-import { users, userRoles, roles, rolePermissions, permissions } from '../db/schema.js';
-import { eq, ne, like, or, and } from 'drizzle-orm';
 import { authMiddleware, requirePermission } from '../auth/middleware.js';
 import { validateJson, validateQuery, validateParams } from '../middleware/validation.js';
+import { userService } from '../services/index.js';
 import { 
   createUserSchema, 
   updateUserSchema, 
@@ -24,77 +21,19 @@ userRoutes.use('*', authMiddleware);
  */
 userRoutes.get('/', requirePermission('user.read'), validateQuery(paginationSchema.merge(searchSchema.partial())), async (c) => {
   const { page, limit, orderBy = 'username', orderDirection, q } = c.get('validatedQuery');
-  const offset = (page - 1) * limit;
 
-    try {
-      const baseQuery = db.select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        displayName: users.displayName,
-        isActive: users.isActive,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        lastLoginAt: users.lastLoginAt
-      }).from(users);
-
-      let usersData;
-      
-      // Apply search filter if provided
-      if (q) {
-        usersData = await baseQuery.where(
-          or(
-            like(users.username, `%${q}%`),
-            like(users.email, `%${q}%`),
-            like(users.displayName, `%${q}%`)
-          )
-        ).limit(limit).offset(offset);
-      } else {
-        usersData = await baseQuery.limit(limit).offset(offset);
-      }
-
-    // Get total count for pagination
-    const totalResult = await db.select({ count: users.id }).from(users);
-    const total = totalResult.length;
-
-    // Get roles for each user
-    const userIds = usersData.map(u => u.id);
-    const userRolesData = await db.select({
-      userId: userRoles.userId,
-      roleName: roles.name,
-      roleDisplayName: roles.displayName
-    })
-    .from(userRoles)
-    .innerJoin(roles, eq(userRoles.roleId, roles.id))
-    .where(eq(userRoles.userId, userIds[0]) || userIds.length > 1 ? 
-      // Use IN operator for multiple users
-      eq(userRoles.userId, userIds[0]) : eq(userRoles.userId, userIds[0]));
-
-    // Group roles by user
-    const userRolesMap = new Map<string, any[]>();
-    userRolesData.forEach(ur => {
-      if (!userRolesMap.has(ur.userId)) {
-        userRolesMap.set(ur.userId, []);
-      }
-      userRolesMap.get(ur.userId)!.push({
-        name: ur.roleName,
-        displayName: ur.roleDisplayName
-      });
+  try {
+    const result = await userService.searchUsers({
+      page,
+      limit,
+      query: q,
+      orderBy,
+      orderDirection
     });
 
-    const usersWithRoles = usersData.map(user => ({
-      ...user,
-      roles: userRolesMap.get(user.id) || []
-    }));
-
     return c.json({
-      users: usersWithRoles,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      users: result.users,
+      pagination: result.pagination
     });
   } catch (error) {
     console.error('List users error:', error);
@@ -109,44 +48,13 @@ userRoutes.get('/:id', requirePermission('user.read'), validateParams(idParamSch
   const { id } = c.get('validatedParams');
 
   try {
-    const user = await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      displayName: users.displayName,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt
-    })
-    .from(users)
-    .where(eq(users.id, id))
-    .get();
+    const user = await userService.findByIdWithRoles(id);
 
     if (!user) {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    // Get user roles
-    const userRolesData = await db.select({
-      roleId: roles.id,
-      roleName: roles.name,
-      roleDisplayName: roles.displayName
-    })
-    .from(userRoles)
-    .innerJoin(roles, eq(userRoles.roleId, roles.id))
-    .where(eq(userRoles.userId, id));
-
-    const userWithRoles = {
-      ...user,
-      roles: userRolesData.map(role => ({
-        id: role.roleId,
-        name: role.roleName,
-        displayName: role.roleDisplayName
-      }))
-    };
-
-    return c.json({ user: userWithRoles });
+    return c.json({ user });
   } catch (error) {
     console.error('Get user error:', error);
     return c.json({ error: 'Internal server error' }, 500);
@@ -160,71 +68,28 @@ userRoutes.post('/', requirePermission('user.write'), validateJson(createUserSch
   const { username, email, password, displayName, isActive = true, roleIds = [] } = c.get('validatedData');
 
   try {
-    // Check if username already exists
-    const existingUser = await db.select()
-      .from(users)
-      .where(eq(users.username, username))
-      .get();
-
-    if (existingUser) {
-      return c.json({ error: 'Username already exists' }, 409);
-    }
-
-    // Check if email already exists
-    const existingEmail = await db.select()
-      .from(users)
-      .where(eq(users.email, email))
-      .get();
-
-    if (existingEmail) {
-      return c.json({ error: 'Email already exists' }, 409);
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user
-    const newUser = await db.insert(users)
-      .values({
-        username,
-        email,
-        passwordHash,
-        displayName: displayName || null,
-        isActive
-      })
-      .returning({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        displayName: users.displayName,
-        isActive: users.isActive,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt
-      })
-      .get();
-
-    // Assign roles if provided
-    if (roleIds.length > 0) {
-      // Verify roles exist
-      const existingRoles = await db.select()
-        .from(roles)
-        .where(eq(roles.id, roleIds[0]) || roleIds.length > 1 ? 
-          eq(roles.id, roleIds[0]) : eq(roles.id, roleIds[0])); // Simplified for demo
-
-      for (const roleId of roleIds) {
-        await db.insert(userRoles)
-          .values({
-            userId: newUser.id,
-            roleId
-          });
-      }
-    }
+    const newUser = await userService.createUser({
+      username,
+      email,
+      password,
+      displayName,
+      isActive,
+      roleIds
+    });
 
     return c.json({
       message: 'User created successfully',
       user: newUser
     }, 201);
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Username already exists') {
+        return c.json({ error: 'Username already exists' }, 409);
+      }
+      if (error.message === 'Email already exists') {
+        return c.json({ error: 'Email already exists' }, 409);
+      }
+    }
     console.error('Create user error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
@@ -239,75 +104,29 @@ userRoutes.put('/:id', requirePermission('user.write'), validateParams(idParamSc
   const currentUser = c.get('user');
 
   try {
-    // Check if user exists
-    const existingUser = await db.select()
-      .from(users)
-      .where(eq(users.id, id))
-      .get();
-
-    if (!existingUser) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    // Prevent users from deactivating themselves
-    if (currentUser.id === id && isActive === false) {
-      return c.json({ error: 'Cannot deactivate your own account' }, 400);
-    }
-
-    // Check if email already exists (excluding current user)
-    if (email) {
-      const existingEmail = await db.select()
-        .from(users)
-        .where(and(eq(users.email, email), ne(users.id, id)))
-        .get();
-
-      if (existingEmail) {
-        return c.json({ error: 'Email already exists' }, 409);
-      }
-    }
-
-    // Update user
-    const updateData: any = { updatedAt: new Date() };
-    if (email !== undefined) updateData.email = email;
-    if (displayName !== undefined) updateData.displayName = displayName;
-    if (isActive !== undefined) updateData.isActive = isActive;
-
-    const updatedUser = await db.update(users)
-      .set(updateData)
-      .where(eq(users.id, id))
-      .returning({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        displayName: users.displayName,
-        isActive: users.isActive,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt
-      })
-      .get();
-
-    // Update roles if provided
-    if (roleIds !== undefined) {
-      // Delete existing roles
-      await db.delete(userRoles).where(eq(userRoles.userId, id));
-
-      // Add new roles
-      if (roleIds.length > 0) {
-        for (const roleId of roleIds) {
-          await db.insert(userRoles)
-            .values({
-              userId: id,
-              roleId
-            });
-        }
-      }
-    }
+    const updatedUser = await userService.updateUser(id, {
+      email,
+      displayName,
+      isActive,
+      roleIds
+    }, currentUser.id);
 
     return c.json({
       message: 'User updated successfully',
       user: updatedUser
     });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'User not found') {
+        return c.json({ error: 'User not found' }, 404);
+      }
+      if (error.message === 'Cannot deactivate your own account') {
+        return c.json({ error: 'Cannot deactivate your own account' }, 400);
+      }
+      if (error.message === 'Email already exists') {
+        return c.json({ error: 'Email already exists' }, 409);
+      }
+    }
     console.error('Update user error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
@@ -321,29 +140,18 @@ userRoutes.delete('/:id', requirePermission('user.delete'), validateParams(idPar
   const currentUser = c.get('user');
 
   try {
-    // Prevent users from deleting themselves
-    if (currentUser.id === id) {
-      return c.json({ error: 'Cannot delete your own account' }, 400);
-    }
-
-    // Check if user exists
-    const existingUser = await db.select()
-      .from(users)
-      .where(eq(users.id, id))
-      .get();
-
-    if (!existingUser) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    // Delete user roles first (foreign key constraint)
-    await db.delete(userRoles).where(eq(userRoles.userId, id));
-
-    // Delete user
-    await db.delete(users).where(eq(users.id, id));
+    await userService.deleteUser(id, currentUser.id);
 
     return c.json({ message: 'User deleted successfully' });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Cannot delete your own account') {
+        return c.json({ error: 'Cannot delete your own account' }, 400);
+      }
+      if (error.message === 'User not found') {
+        return c.json({ error: 'User not found' }, 404);
+      }
+    }
     console.error('Delete user error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
@@ -357,42 +165,21 @@ userRoutes.put('/profile', validateJson(updateUserProfileSchema), async (c) => {
   const { email, displayName } = c.get('validatedData');
 
   try {
-    // Check if email already exists (excluding current user)
-    if (email) {
-      const existingEmail = await db.select()
-        .from(users)
-        .where(and(eq(users.email, email), ne(users.id, currentUser.id)))
-        .get();
-
-      if (existingEmail) {
-        return c.json({ error: 'Email already exists' }, 409);
-      }
-    }
-
-    // Update user profile
-    const updateData: any = { updatedAt: new Date() };
-    if (email !== undefined) updateData.email = email;
-    if (displayName !== undefined) updateData.displayName = displayName;
-
-    const updatedUser = await db.update(users)
-      .set(updateData)
-      .where(eq(users.id, currentUser.id))
-      .returning({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        displayName: users.displayName,
-        isActive: users.isActive,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt
-      })
-      .get();
+    const updatedUser = await userService.updateUser(currentUser.id, {
+      email,
+      displayName
+    });
 
     return c.json({
       message: 'Profile updated successfully',
       user: updatedUser
     });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Email already exists') {
+        return c.json({ error: 'Email already exists' }, 409);
+      }
+    }
     console.error('Update profile error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }

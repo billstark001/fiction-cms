@@ -136,6 +136,58 @@ app.route('/api/sites', siteRoutes);
 app.route('/api/engine', engineRoutes);
 ```
 
+### 服务层架构 (重构后)
+
+为了提高可维护性和代码重用，系统引入了专门的服务层：
+
+```typescript
+// 服务层结构
+interface ServiceLayer {
+  userService: {
+    // 用户CRUD操作
+    findById: (id: string) => Promise<UserData | null>;
+    findByCredentials: (usernameOrEmail: string) => Promise<UserData | null>;
+    createUser: (userData: CreateUserData) => Promise<UserData>;
+    updateUser: (id: string, updateData: UpdateUserData) => Promise<UserData>;
+    deleteUser: (id: string) => Promise<void>;
+    
+    // 认证相关
+    verifyPassword: (userId: string, password: string) => Promise<boolean>;
+    changePassword: (userId: string, current: string, new: string) => Promise<void>;
+    updateLastLogin: (userId: string) => Promise<void>;
+    
+    // 权限管理
+    getUserPermissions: (userId: string) => Promise<string[]>;
+    hasPermission: (userId: string, permission: string) => Promise<boolean>;
+    
+    // 角色管理
+    assignRolesToUser: (userId: string, roleIds: string[]) => Promise<void>;
+    updateUserRoles: (userId: string, roleIds: string[]) => Promise<void>;
+  };
+  
+  roleService: {
+    // 角色CRUD操作
+    getAllRoles: () => Promise<RoleData[]>;
+    findRoleById: (id: string) => Promise<RoleData | null>;
+    createRole: (roleData: CreateRoleData) => Promise<RoleData>;
+    updateRole: (id: string, updateData: UpdateRoleData) => Promise<RoleData>;
+    deleteRole: (id: string) => Promise<void>;
+    
+    // 权限管理
+    getAllPermissions: () => Promise<PermissionData[]>;
+    assignPermissionsToRole: (roleId: string, permissionIds: string[]) => Promise<void>;
+    updateRolePermissions: (roleId: string, permissionIds: string[]) => Promise<void>;
+  };
+}
+```
+
+**服务层优势：**
+
+- **集中管理**: 所有数据库操作集中在服务层，避免重复代码
+- **安全性**: 统一的验证和安全检查逻辑
+- **可测试性**: 服务层易于进行单元测试
+- **可维护性**: 修改业务逻辑只需修改服务层，不影响路由层
+
 ### 中间件堆栈
 
 1. **CORS 处理器**: 跨域请求管理

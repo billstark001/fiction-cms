@@ -1,7 +1,7 @@
 import { V4 } from 'paseto';
 import * as crypto from 'crypto';
 import { db } from '../db/index.js';
-import { refreshTokens, users } from '../db/schema.js';
+import { refreshTokens } from '../db/schema.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { loggers, logHelpers } from '../utils/logger.js';

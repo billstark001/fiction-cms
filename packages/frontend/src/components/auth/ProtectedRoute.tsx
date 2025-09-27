@@ -42,9 +42,8 @@ export default function ProtectedRoute({ children, requiredRoles = [] }: Protect
 
   // Check role-based access if required roles are specified
   if (requiredRoles.length > 0 && user) {
-    const userRoleNames = user.roles.map(role => role.name);
-    const hasRequiredRole = requiredRoles.some(role => userRoleNames.includes(role));
-    
+    const hasRequiredRole = requiredRoles.some(role => user.roles.includes(role));
+
     if (!hasRequiredRole) {
       return (
         <div style={{

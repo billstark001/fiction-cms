@@ -9,13 +9,11 @@ import { validateJson, validateQuery, validateParams } from '../middleware/valid
 import { 
   fileOperationSchema,
   createFileSchema,
-  uploadAssetSchema,
   sqliteQuerySchema,
   sqliteUpdateSchema,
   sqliteCreateSchema,
   sqliteDeleteSchema,
   siteIdParamSchema,
-  filePathParamSchema,
   deploymentTriggerSchema,
   paginationSchema
 } from '../schemas/index.js';

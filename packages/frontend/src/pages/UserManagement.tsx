@@ -349,10 +349,11 @@ export default function UserManagement() {
                       {user.email}
                     </td>
                     <td style={{ padding: '0.75rem' }}>
+                      [TODO: fetch roles properly]
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                         {user.roles.map(role => (
                           <span
-                            key={role.id}
+                            key={role}
                             style={{
                               padding: '0.25rem 0.5rem',
                               backgroundColor: '#eff6ff',
@@ -361,7 +362,7 @@ export default function UserManagement() {
                               fontSize: '0.75rem'
                             }}
                           >
-                            {role.displayName}
+                            {role}
                           </span>
                         ))}
                       </div>

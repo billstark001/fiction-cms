@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import { users, refreshTokens } from '../db/schema.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, revokeRefreshToken, revokeAllUserRefreshTokens } from '../auth/tokens.js';
+import { UserDataWithRoles, userService } from '../services/index.js';
 import { authMiddleware } from '../auth/middleware.js';
 import { validateJson } from '../middleware/validation.js';
 import { authRateLimit } from '../middleware/rate-limiting.js';
@@ -24,38 +25,25 @@ auth.post('/login', authRateLimit, validateJson(loginSchema), async (c) => {
   const { username, password } = c.get('validatedData');
 
   try {
-    // Find user by username or email
-    let user = await db.select()
-      .from(users)
-      .where(eq(users.username, username))
-      .get();
-
+    // Find user by username or email using service
+    const user = await userService.findByCredentials(username);
+    
     if (!user) {
-      // Check by email as fallback
-      user = await db.select()
-        .from(users)
-        .where(eq(users.email, username))
-        .get();
-      
-      if (!user) {
-        return createErrorResponse('Invalid credentials', 'INVALID_CREDENTIALS', 401);
-      }
+      return createErrorResponse('Invalid credentials', 'INVALID_CREDENTIALS', 401);
     }
 
     if (!user.isActive) {
       return createErrorResponse('Account is disabled', 'ACCOUNT_DISABLED', 401);
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    // Verify password using service
+    const isValidPassword = await userService.verifyPassword(user.id, password);
     if (!isValidPassword) {
       return createErrorResponse('Invalid credentials', 'INVALID_CREDENTIALS', 401);
     }
 
-    // Update last login timestamp
-    await db.update(users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(users.id, user.id));
+    // Update last login timestamp using service
+    await userService.updateLastLogin(user.id);
 
     // Generate tokens
     const userPayload = {
@@ -68,16 +56,13 @@ auth.post('/login', authRateLimit, validateJson(loginSchema), async (c) => {
     const accessToken = await generateAccessToken(userPayload);
     const refreshToken = await generateRefreshToken(userPayload);
 
+    const userWithRoles = user as UserDataWithRoles;
+    userWithRoles.roles = await userService.getUserRoles(user.id);
+    userWithRoles.permissions = await userService.getUserPermissions(user.id);
+
     return c.json({
       message: 'Login successful',
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        displayName: user.displayName,
-        isActive: user.isActive,
-        lastLoginAt: user.lastLoginAt
-      },
+      user: userWithRoles,
       tokens: {
         accessToken,
         refreshToken
@@ -95,47 +80,14 @@ auth.post('/register', authRateLimit, validateJson(registerSchema), async (c) =>
   const { username, email, password, displayName } = c.get('validatedData');
 
   try {
-    // Check if username already exists
-    const existingUser = await db.select()
-      .from(users)
-      .where(eq(users.username, username))
-      .get();
-
-    if (existingUser) {
-      return c.json({ error: 'Username already exists' }, 409);
-    }
-
-    // Check if email already exists
-    const existingEmail = await db.select()
-      .from(users)
-      .where(eq(users.email, email))
-      .get();
-
-    if (existingEmail) {
-      return c.json({ error: 'Email already exists' }, 409);
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user
-    const newUser = await db.insert(users)
-      .values({
-        username,
-        email,
-        passwordHash,
-        displayName: displayName || null,
-        isActive: true
-      })
-      .returning({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        displayName: users.displayName,
-        isActive: users.isActive,
-        createdAt: users.createdAt
-      })
-      .get();
+    // Create user using service
+    const newUser = await userService.createUser({
+      username,
+      email,
+      password,
+      displayName,
+      isActive: true
+    });
 
     // Generate tokens
     const userPayload = {
@@ -148,15 +100,28 @@ auth.post('/register', authRateLimit, validateJson(registerSchema), async (c) =>
     const accessToken = await generateAccessToken(userPayload);
     const refreshToken = await generateRefreshToken(userPayload);
 
+    const userWithRoles = newUser as UserDataWithRoles;
+    userWithRoles.roles = await userService.getUserRoles(newUser.id);
+    userWithRoles.permissions = await userService.getUserPermissions(newUser.id);
+
     return c.json({
       message: 'Registration successful',
-      user: newUser,
+      user: userWithRoles,
       tokens: {
         accessToken,
         refreshToken
       }
     }, 201);
   } catch (error) {
+    // Handle specific service errors
+    if (error instanceof Error) {
+      if (error.message === 'Username already exists') {
+        return c.json({ error: 'Username already exists' }, 409);
+      }
+      if (error.message === 'Email already exists') {
+        return c.json({ error: 'Email already exists' }, 409);
+      }
+    }
     return handleError(error, 'User registration', c);
   }
 });
@@ -171,11 +136,8 @@ auth.post('/refresh', validateJson(refreshTokenSchema), async (c) => {
     // Verify refresh token
     const payload = await verifyRefreshToken(refreshToken);
 
-    // Get user data
-    const user = await db.select()
-      .from(users)
-      .where(eq(users.id, payload.sub))
-      .get();
+    // Get user data using service
+    const user = await userService.findById(payload.sub);
 
     if (!user || !user.isActive) {
       return c.json({ error: 'User not found or inactive' }, 401);
@@ -246,38 +208,20 @@ auth.post('/change-password', authMiddleware, validateJson(changePasswordSchema)
   const { currentPassword, newPassword } = c.get('validatedData');
 
   try {
-    // Get user data from database
-    const dbUser = await db.select()
-      .from(users)
-      .where(eq(users.id, user.id))
-      .get();
-
-    if (!dbUser) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, dbUser.passwordHash);
-    if (!isValidPassword) {
-      return c.json({ error: 'Current password is incorrect' }, 400);
-    }
-
-    // Hash new password
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
-
-    // Update password
-    await db.update(users)
-      .set({ 
-        passwordHash: newPasswordHash,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, user.id));
-
-    // Revoke all existing refresh tokens for security
-    await revokeAllUserRefreshTokens(user.id);
+    // Change password using service
+    await userService.changePassword(user.id, currentPassword, newPassword);
 
     return c.json({ message: 'Password changed successfully' });
   } catch (error) {
+    // Handle specific service errors
+    if (error instanceof Error) {
+      if (error.message === 'Current password is incorrect') {
+        return c.json({ error: 'Current password is incorrect' }, 400);
+      }
+      if (error.message === 'User not found') {
+        return c.json({ error: 'User not found' }, 404);
+      }
+    }
     return handleError(error, 'Change password', c);
   }
 });
@@ -286,34 +230,18 @@ auth.post('/change-password', authMiddleware, validateJson(changePasswordSchema)
  * GET /auth/me - Get current user information
  */
 auth.get('/me', authMiddleware, async (c) => {
-  const user = c.get('user');
+  const { id: userId } = c.get('user') ?? { id: null };
 
   try {
-    // Get fresh user data from database
-    const dbUser = await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      displayName: users.displayName,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt
-    })
-    .from(users)
-    .where(eq(users.id, user.id))
-    .get();
+    // Get fresh user data from service
+    const user = await userService.findByIdWithRoles(userId);
 
-    if (!dbUser) {
+    if (!user) {
       return c.json({ error: 'User not found' }, 404);
     }
 
     return c.json({
-      user: {
-        ...dbUser,
-        roles: user.roles,
-        permissions: user.permissions
-      }
+      user
     });
   } catch (error) {
     return handleError(error, 'Get user profile', c);

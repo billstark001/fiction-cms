@@ -136,6 +136,58 @@ app.route('/api/sites', siteRoutes);
 app.route('/api/engine', engineRoutes);
 ```
 
+### Service Layer Architecture (Refactored)
+
+To improve maintainability and code reuse, the system introduces a dedicated service layer:
+
+```typescript
+// Service layer structure
+interface ServiceLayer {
+  userService: {
+    // User CRUD operations
+    findById: (id: string) => Promise<UserData | null>;
+    findByCredentials: (usernameOrEmail: string) => Promise<UserData | null>;
+    createUser: (userData: CreateUserData) => Promise<UserData>;
+    updateUser: (id: string, updateData: UpdateUserData) => Promise<UserData>;
+    deleteUser: (id: string) => Promise<void>;
+    
+    // Authentication related
+    verifyPassword: (userId: string, password: string) => Promise<boolean>;
+    changePassword: (userId: string, current: string, new: string) => Promise<void>;
+    updateLastLogin: (userId: string) => Promise<void>;
+    
+    // Permission management
+    getUserPermissions: (userId: string) => Promise<string[]>;
+    hasPermission: (userId: string, permission: string) => Promise<boolean>;
+    
+    // Role management
+    assignRolesToUser: (userId: string, roleIds: string[]) => Promise<void>;
+    updateUserRoles: (userId: string, roleIds: string[]) => Promise<void>;
+  };
+  
+  roleService: {
+    // Role CRUD operations
+    getAllRoles: () => Promise<RoleData[]>;
+    findRoleById: (id: string) => Promise<RoleData | null>;
+    createRole: (roleData: CreateRoleData) => Promise<RoleData>;
+    updateRole: (id: string, updateData: UpdateRoleData) => Promise<RoleData>;
+    deleteRole: (id: string) => Promise<void>;
+    
+    // Permission management
+    getAllPermissions: () => Promise<PermissionData[]>;
+    assignPermissionsToRole: (roleId: string, permissionIds: string[]) => Promise<void>;
+    updateRolePermissions: (roleId: string, permissionIds: string[]) => Promise<void>;
+  };
+}
+```
+
+**Service Layer Benefits:**
+
+- **Centralized Management**: All database operations are centralized in the service layer, avoiding code duplication
+- **Security**: Unified validation and security check logic
+- **Testability**: Service layer is easy to unit test
+- **Maintainability**: Business logic changes only require service layer modifications, not affecting route layer
+
 ### Middleware Stack
 
 1. **CORS Handler**: Cross-origin request management

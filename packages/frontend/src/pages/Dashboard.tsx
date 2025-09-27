@@ -46,7 +46,7 @@ export default function Dashboard() {
       let totalUsers = 0;
 
       // Try to get user count if user has admin role
-      if (user?.roles?.some(role => role.name === 'admin')) {
+      if (user?.roles?.some(role => role === 'admin')) {
         try {
           const usersResponse = await apiClient.getUsers({ limit: 1 });
           totalUsers = usersResponse.total;
@@ -108,7 +108,7 @@ export default function Dashboard() {
     );
   }
 
-  const isAdmin = user?.roles?.some(role => role.name === 'admin') ?? false;
+  const isAdmin = user?.roles?.some(role => role === 'admin') ?? false;
 
   return (
     <Layout>
