@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import FileEditor from '../components/editor/FileEditor';
 import { apiClient } from '../api/client';
+import { ArrowLeftIcon } from '../components/icons';
 import * as contentStyles from './SiteContentManagement.css';
 import * as pageStyles from '../styles/pages.css';
 import * as formStyles from '../styles/forms.css';
+import * as commonStyles from '../styles/common.css';
 
 interface FileItem {
   path: string;
@@ -138,13 +140,7 @@ export default function SiteContentManagement() {
   if (state.loading) {
     return (
       <Layout>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '200px',
-          color: '#6b7280'
-        }}>
+        <div className={commonStyles.loadingContainer}>
           Loading site content...
         </div>
       </Layout>
@@ -159,9 +155,7 @@ export default function SiteContentManagement() {
             onClick={() => navigate('/sites')}
             className={contentStyles.backButton}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15,18 9,12 15,6"></polyline>
-            </svg>
+            <ArrowLeftIcon />
             Back to Sites
           </button>
           <h1 className={pageStyles.pageTitle}>Site Content Management</h1>
@@ -172,20 +166,18 @@ export default function SiteContentManagement() {
       </div>
 
       {state.error && (
-        <div className={pageStyles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
-          <div style={{ color: '#dc2626', padding: '1rem', textAlign: 'center' }}>
-            {state.error}
-            <button
-              onClick={() => setState(prev => ({ ...prev, error: null }))}
-              className={contentStyles.errorDismissButton}
-            >
-              Dismiss
-            </button>
-          </div>
+        <div className={formStyles.errorMessage}>
+          {state.error}
+          <button
+            onClick={() => setState(prev => ({ ...prev, error: null }))}
+            className={contentStyles.errorDismissButton}
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', height: 'calc(100vh - 200px)' }}>
+      <div className={contentStyles.contentLayout}>
         {/* File Browser */}
         <div className={`${pageStyles.card} ${contentStyles.fileBrowserCard}`}>
           <div className={pageStyles.cardHeader}>

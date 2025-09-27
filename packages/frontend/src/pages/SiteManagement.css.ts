@@ -139,3 +139,69 @@ export const emptyStateTitle = style({
 export const emptyStateText = style({
   margin: 0,
 });
+
+// Loading state
+export const loadingContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: '200px',
+  color: '#6b7280',
+});
+
+// Site detail metadata
+export const siteDetailMeta = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+});
+
+export const statusDot = style({
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  flexShrink: 0,
+});
+
+export const statusDotActive = style([statusDot, {
+  backgroundColor: '#16a34a',
+}]);
+
+export const statusDotInactive = style([statusDot, {
+  backgroundColor: '#dc2626',
+}]);
+
+export const inlineCode = style({
+  backgroundColor: '#f3f4f6',
+  padding: '0.125rem 0.375rem',
+  borderRadius: '0.25rem',
+  fontSize: '0.875rem',
+  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+});
+
+export const metaLabel = style({
+  fontWeight: 'medium',
+});
+
+// Action buttons container
+export const actionButtonsContainer = style({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+});
+
+// External link style
+export const externalLink = style({
+  color: '#2563eb',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+  
+  selectors: {
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+});

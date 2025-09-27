@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { apiClient, Site } from '../api/client';
 import { useAuth } from '../store/authStore';
+import { ExternalLinkIcon } from '../components/icons';
 import * as layoutStyles from '../components/layout/Layout.css';
 import * as siteStyles from './SiteManagement.css';
 import * as pageStyles from '../styles/pages.css';
+import * as formStyles from '../styles/forms.css';
 
 interface SiteListState {
   sites: Site[];
@@ -86,13 +88,7 @@ export default function SiteManagement() {
   if (state.loading && state.sites.length === 0) {
     return (
       <Layout>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          height: '200px',
-          color: '#6b7280'
-        }}>
+        <div className={siteStyles.loadingContainer}>
           Loading sites...
         </div>
       </Layout>
@@ -119,10 +115,8 @@ export default function SiteManagement() {
       </div>
 
       {state.error && (
-        <div className={layoutStyles.card} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
-          <div style={{ color: '#dc2626', padding: '1rem', textAlign: 'center' }}>
-            Error: {state.error}
-          </div>
+        <div className={formStyles.errorMessage}>
+          Error: {state.error}
         </div>
       )}
 
@@ -204,21 +198,10 @@ export default function SiteManagement() {
                       target="_blank" 
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{ 
-                        fontSize: '0.75rem', 
-                        color: '#2563eb', 
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.25rem'
-                      }}
+                      className={siteStyles.externalLink}
                     >
                       <span>View Repository</span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                        <polyline points="15,3 21,3 21,9"></polyline>
-                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                      </svg>
+                      <ExternalLinkIcon />
                     </a>
                   </div>
                   

@@ -255,3 +255,12 @@ export const hoverBgBlue700 = style({
     },
   },
 });
+
+// Loading state
+export const loadingContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '200px',
+  color: '#6b7280',
+});
