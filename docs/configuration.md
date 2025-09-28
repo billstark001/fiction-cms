@@ -213,6 +213,223 @@ const portfolioConfig: SiteConfig = {
 };
 ```
 
+## Enhanced Site Configuration (v2.0)
+
+The refactored Fiction CMS introduces comprehensive site configuration with advanced features:
+
+### Validation Commands
+
+Sites can now include validation commands that run before deployment:
+
+```typescript
+const siteConfig: SiteConfig = {
+  // ... basic config
+  validateCommand: 'npm run validate',  // Returns 0=success, 1=error, other=warning
+};
+```
+
+**Example validation commands:**
+- `npm run test` - Run unit tests
+- `npm run lint` - Code quality checks
+- `hugo check` - Hugo site validation
+- `zola check` - Zola site validation
+- `./scripts/validate.sh` - Custom validation script
+
+### Model Files with Zod Validation
+
+Define structured data files with runtime validation:
+
+```typescript
+const siteConfig: SiteConfig = {
+  // ... basic config
+  modelFiles: [
+    {
+      filePath: 'content/posts/*.json',  // Supports glob patterns
+      zodValidator: 'z.object({ title: z.string(), date: z.string().datetime(), tags: z.array(z.string()) })',
+      displayName: 'Blog Posts'
+    },
+    {
+      filePath: 'data/authors.json',
+      zodValidator: 'z.array(z.object({ name: z.string(), bio: z.string(), avatar: z.string().url() }))',
+      displayName: 'Authors'
+    }
+  ]
+};
+```
+
+**Zod Validator Examples:**
+```javascript
+// Basic object validation
+'z.object({ title: z.string(), content: z.string() })'
+
+// Array validation
+'z.array(z.object({ name: z.string(), value: z.number() }))'
+
+// Optional fields and defaults
+'z.object({ title: z.string(), draft: z.boolean().default(false), publishDate: z.string().datetime().optional() })'
+
+// String validations
+'z.object({ email: z.string().email(), slug: z.string().regex(/^[a-z0-9-]+$/) })'
+
+// Enum validation
+'z.object({ status: z.enum(["draft", "published", "archived"]) })'
+```
+
+### Enhanced SQLite Configuration
+
+SQLite files now support advanced column permissions and default values:
+
+```typescript
+const siteConfig: SiteConfig = {
+  // ... basic config
+  sqliteFiles: [
+    {
+      filePath: 'data/**/*.db',  // Glob pattern support
+      editableTables: [
+        {
+          tableName: 'posts',
+          readableColumns: ['id', 'title', 'content', 'published_at', 'author_id'],  // What users can see
+          editableColumns: ['title', 'content', 'author_id'],  // What users can modify
+          displayName: 'Blog Posts',
+          defaultValues: {
+            author_id: 1,
+            published_at: '${current_timestamp}'
+          },
+          primaryKeyStrategy: 'auto_increment'  // or 'random_string', 'timestamp', 'custom'
+        },
+        {
+          tableName: 'authors',
+          // If columns not specified, all columns are readable and editable
+          displayName: 'Authors',
+          primaryKeyStrategy: 'random_string'
+        }
+      ]
+    }
+  ]
+};
+```
+
+**Column Permission Examples:**
+- `readableColumns: undefined` - All columns visible (default)
+- `editableColumns: undefined` - All columns editable (default)  
+- `readableColumns: ['title', 'content']` - Only these columns shown in UI
+- `editableColumns: ['title']` - Only title can be modified
+- Columns can be readable but not editable (read-only display)
+
+**Primary Key Strategies:**
+- `'auto_increment'` - Database handles ID generation (default)
+- `'random_string'` - Generate random string IDs using cuid2
+- `'timestamp'` - Use current timestamp as ID
+- `'custom'` - Let user provide ID value
+
+### Custom File Types
+
+Extend the CMS to support specialized file formats:
+
+```typescript
+const siteConfig: SiteConfig = {
+  // ... basic config
+  customFileTypes: [
+    {
+      name: 'bibtex',
+      extensions: ['.bib'],
+      displayName: 'Bibliography',
+      isText: true  // Treat as text for editing
+    },
+    {
+      name: 'latex',
+      extensions: ['.tex', '.ltx'],
+      displayName: 'LaTeX Documents',
+      isText: true
+    },
+    {
+      name: 'datafile',
+      extensions: ['.csv', '.tsv'],
+      displayName: 'Data Files',
+      isText: true
+    },
+    {
+      name: 'config',
+      extensions: ['.toml', '.ini'],
+      displayName: 'Configuration Files', 
+      isText: true
+    }
+  ]
+};
+```
+
+### Complete Enhanced Configuration Example
+
+```typescript
+const academicSiteConfig: SiteConfig = {
+  id: 'academic-site',
+  name: 'Academic Research Site',
+  githubRepositoryUrl: 'https://github.com/researcher/academic-site',
+  githubPat: 'ghp_xxxxxxxxxxxx',
+  localPath: '/var/sites/academic',
+  buildCommand: 'hugo --minify',
+  buildOutputDir: 'public',
+  validateCommand: 'hugo check --verbose && npm run test',
+  editablePaths: ['content/', 'data/', 'static/publications/'],
+  
+  // Model files with validation
+  modelFiles: [
+    {
+      filePath: 'data/publications/*.json',
+      zodValidator: 'z.object({ title: z.string(), authors: z.array(z.string()), year: z.number().min(1900).max(2030), doi: z.string().optional(), tags: z.array(z.string()) })',
+      displayName: 'Publications'
+    },
+    {
+      filePath: 'data/courses.json', 
+      zodValidator: 'z.array(z.object({ code: z.string(), title: z.string(), credits: z.number(), semester: z.enum(["Fall", "Spring", "Summer"]) }))',
+      displayName: 'Course Catalog'
+    }
+  ],
+  
+  // SQLite databases with column controls
+  sqliteFiles: [
+    {
+      filePath: 'data/research.db',
+      editableTables: [
+        {
+          tableName: 'projects',
+          readableColumns: ['id', 'title', 'description', 'status', 'start_date', 'end_date', 'funding'],
+          editableColumns: ['title', 'description', 'status', 'end_date'],
+          displayName: 'Research Projects',
+          defaultValues: {
+            status: 'planning',
+            start_date: '${current_date}'
+          },
+          primaryKeyStrategy: 'auto_increment'
+        }
+      ]
+    }
+  ],
+  
+  // Custom file types for academic content
+  customFileTypes: [
+    {
+      name: 'bibtex',
+      extensions: ['.bib'],
+      displayName: 'Bibliography',
+      isText: true
+    },
+    {
+      name: 'latex',
+      extensions: ['.tex'],
+      displayName: 'LaTeX Source',
+      isText: true
+    },
+    {
+      name: 'ris',
+      extensions: ['.ris'],
+      displayName: 'Reference Manager',
+      isText: true
+    }
+  ]
+};
+```
+
 ### Site Configuration Management
 
 #### Loading from Environment Variables
