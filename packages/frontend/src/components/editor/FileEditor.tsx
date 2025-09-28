@@ -9,7 +9,7 @@ import { createEditorStore } from '../../store/editorStore';
 
 interface FileEditorProps {
   filePath: string;
-  fileType: 'markdown' | 'json' | 'sqlite' | 'asset';
+  fileType: string; // Changed to support custom file types
   content: string;
   onSave: (content: string, commitMessage?: string) => Promise<void>;
 }

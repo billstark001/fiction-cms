@@ -4,7 +4,7 @@ import { apiClient } from '../api/client';
 
 interface FileItem {
   path: string;
-  type: 'markdown' | 'json' | 'sqlite' | 'asset';
+  type: string; // Changed from union to string to support custom types
   size: number;
   lastModified: string;
 }

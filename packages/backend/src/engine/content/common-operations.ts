@@ -1,17 +1,138 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { glob } from 'glob';
 import { SiteConfig, FileOperationResult, ContentFile } from '../types.js';
 
 /**
  * 通用文件操作功能
- * 提供基础的文件系统操作和路径验证
+ * 提供基础的文件系统操作和路径验证，以及文件类型检测
  */
 export class CommonFileOperations {
+
+  /**
+   * 根据文件扩展名和站点配置确定文件类型
+   */
+  determineFileType(fileName: string, siteConfig?: SiteConfig): string {
+    const ext = path.extname(fileName).toLowerCase();
+    
+    // 首先检查自定义文件类型
+    if (siteConfig?.customFileTypes) {
+      for (const customType of siteConfig.customFileTypes) {
+        if (customType.extensions.some(extension => 
+          ext === extension || ext === `.${extension.replace(/^\./, '')}`
+        )) {
+          return customType.name;
+        }
+      }
+    }
+
+    // 内置文件类型检测
+    switch (ext) {
+      case '.md':
+      case '.markdown':
+        return 'markdown';
+      case '.json':
+        return 'json';
+      case '.sqlite':
+      case '.sqlite3':
+      case '.db':
+        return 'sqlite';
+      case '.yml':
+      case '.yaml':
+        return 'yaml';
+      case '.txt':
+        return 'text';
+      case '.js':
+      case '.ts':
+      case '.jsx':
+      case '.tsx':
+        return 'javascript';
+      case '.css':
+      case '.scss':
+      case '.less':
+        return 'stylesheet';
+      case '.html':
+      case '.htm':
+        return 'html';
+      case '.xml':
+        return 'xml';
+      case '.jpg':
+      case '.jpeg':
+      case '.png':
+      case '.gif':
+      case '.svg':
+      case '.webp':
+        return 'image';
+      case '.pdf':
+        return 'document';
+      case '.mp3':
+      case '.wav':
+      case '.ogg':
+        return 'audio';
+      case '.mp4':
+      case '.webm':
+      case '.avi':
+        return 'video';
+      default:
+        return 'asset';
+    }
+  }
+
+  /**
+   * 检查文件类型是否为文本类型
+   */
+  isTextFileType(fileType: string, siteConfig?: SiteConfig): boolean {
+    // 检查自定义文件类型
+    if (siteConfig?.customFileTypes) {
+      const customType = siteConfig.customFileTypes.find(ct => ct.name === fileType);
+      if (customType) {
+        return customType.isText ?? false;
+      }
+    }
+
+    // 内置文本文件类型
+    const textTypes = [
+      'markdown', 'json', 'yaml', 'text', 'javascript', 
+      'stylesheet', 'html', 'xml'
+    ];
+    return textTypes.includes(fileType);
+  }
+
+  /**
+   * 检查glob模式是否匹配文件路径
+   */
+  async matchesGlobPattern(pattern: string, filePath: string, basePath: string): Promise<boolean> {
+    const fullPattern = path.join(basePath, pattern);
+    const matches = await glob(fullPattern);
+    const fullFilePath = path.resolve(path.join(basePath, filePath));
+    return matches.some(match => path.resolve(match) === fullFilePath);
+  }
+
+  /**
+   * 解析glob模式，返回匹配的文件列表
+   */
+  async resolveGlobPatterns(patterns: string[], basePath: string): Promise<string[]> {
+    const allMatches: string[] = [];
+    
+    for (const pattern of patterns) {
+      try {
+        const fullPattern = path.join(basePath, pattern);
+        const matches = await glob(fullPattern);
+        const relativeMatches = matches.map(match => path.relative(basePath, match));
+        allMatches.push(...relativeMatches);
+      } catch (error) {
+        console.warn(`Failed to resolve glob pattern ${pattern}:`, error);
+      }
+    }
+    
+    // 去重并返回
+    return [...new Set(allMatches)];
+  }
   
   /**
    * 扫描目录获取文件列表
    */
-  async scanDirectory(dirPath: string, basePath: string): Promise<ContentFile[]> {
+  async scanDirectory(dirPath: string, basePath: string, siteConfig?: SiteConfig): Promise<ContentFile[]> {
     const files: ContentFile[] = [];
 
     try {
@@ -23,15 +144,11 @@ export class CommonFileOperations {
 
         if (entry.isDirectory()) {
           // 递归扫描子目录
-          const subFiles = await this.scanDirectory(fullPath, basePath);
+          const subFiles = await this.scanDirectory(fullPath, basePath, siteConfig);
           files.push(...subFiles);
         } else if (entry.isFile()) {
           const stats = await fs.stat(fullPath);
-          const ext = path.extname(entry.name).toLowerCase();
-
-          let fileType: ContentFile['type'] = 'asset';
-          if (ext === '.md') fileType = 'markdown';
-          else if (ext === '.json') fileType = 'json';
+          const fileType = this.determineFileType(entry.name, siteConfig);
 
           files.push({
             path: relativePath.replace(/\\/g, '/'), // 统一使用正斜杠

@@ -33,7 +33,7 @@ export class ContentManager {
       // 处理普通文件路径
       for (const editablePath of editablePaths) {
         const fullPath = path.join(localPath, editablePath);
-        const pathFiles = await commonFileOperations.scanDirectory(fullPath, localPath);
+        const pathFiles = await commonFileOperations.scanDirectory(fullPath, localPath, siteConfig);
         files.push(...pathFiles);
       }
 
@@ -146,12 +146,7 @@ export class ContentManager {
       }
 
       const stats = await commonFileOperations.getFileStats(fullPath);
-      const ext = path.extname(relativePath).toLowerCase();
-
-      let fileType: ContentFile['type'] = 'asset';
-      if (ext === '.md') fileType = 'markdown';
-      else if (ext === '.json') fileType = 'json';
-      else if (ext === '.db' || ext === '.sqlite') fileType = 'sqlite';
+      const fileType = commonFileOperations.determineFileType(path.basename(relativePath), siteConfig);
 
       return {
         success: true,
@@ -161,7 +156,7 @@ export class ContentManager {
           size: stats.size,
           lastModified: stats.mtime,
           created: stats.birthtime,
-          extension: ext
+          extension: path.extname(relativePath).toLowerCase()
         }
       };
     } catch (error) {
@@ -317,12 +312,7 @@ export class ContentManager {
             tree.children.push(subTree);
           } else {
             const stats = await fs.stat(entryPath);
-            const ext = path.extname(entry.name).toLowerCase();
-            
-            let fileType: ContentFile['type'] = 'asset';
-            if (ext === '.md') fileType = 'markdown';
-            else if (ext === '.json') fileType = 'json';
-            else if (ext === '.db' || ext === '.sqlite') fileType = 'sqlite';
+            const fileType = commonFileOperations.determineFileType(entry.name, siteConfig);
 
             tree.children.push({
               name: entry.name,

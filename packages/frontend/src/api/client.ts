@@ -61,8 +61,42 @@ export interface Site {
   description?: string | null;
   githubRepositoryUrl: string;
   localPath: string;
+  buildCommand?: string;
+  buildOutputDir?: string;
+  validateCommand?: string;
+  editablePaths?: string[];
+  sqliteFiles?: SQLiteFileConfig[];
+  modelFiles?: ModelFileConfig[];
+  customFileTypes?: CustomFileTypeConfig[];
   createdAt: string;
   isActive: boolean;
+}
+
+export interface SQLiteFileConfig {
+  filePath: string; // Supports glob patterns
+  editableTables: SQLiteTableConfig[];
+}
+
+export interface SQLiteTableConfig {
+  tableName: string;
+  editableColumns?: string[]; // Optional, defaults to all columns if not specified
+  readableColumns?: string[]; // Optional, defaults to all columns if not specified
+  displayName?: string;
+  defaultValues?: Record<string, any>; // Default values for new rows
+  primaryKeyStrategy?: 'auto_increment' | 'random_string' | 'timestamp' | 'custom';
+}
+
+export interface ModelFileConfig {
+  filePath: string; // Supports glob patterns
+  zodValidator: string; // Plain text zod definition like 'z.object({ ... })'
+  displayName?: string;
+}
+
+export interface CustomFileTypeConfig {
+  name: string;
+  extensions: string[];
+  displayName?: string;
+  isText?: boolean; // Whether the file type should be treated as text
 }
 
 export interface CreateUserRequest {
@@ -361,7 +395,7 @@ class ApiClient {
   async getEditableFiles(siteId: string): Promise<{
     files: Array<{
       path: string;
-      type: 'markdown' | 'json' | 'sqlite' | 'asset';
+      type: string; // Changed to support custom file types
       size: number;
       lastModified: string;
     }>;
@@ -410,6 +444,22 @@ class ApiClient {
   }> {
     return this.request<any>(`/engine/sites/${siteId}/files/${encodeURIComponent(filePath)}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Validation endpoint
+  async validateSite(siteId: string): Promise<{
+    message: string;
+    status: 'success' | 'warning' | 'error';
+    returnCode: number;
+    stdout: string;
+    stderr: string;
+    executionTime: number;
+    hasValidateCommand: boolean;
+    timestamp: string;
+  }> {
+    return this.request<any>(`/engine/sites/${siteId}/validate`, {
+      method: 'POST',
     });
   }
 

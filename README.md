@@ -13,10 +13,16 @@ Fiction CMS is a comprehensive content management solution designed for managing
 - **Git-Native Workflow**: Direct integration with GitHub repositories
 - **Multi-Site Management**: Manage multiple static sites from one dashboard  
 - **Rich Content Editing**: Markdown editor with live preview, JSON editor with validation, and SQLite database management
+- **Enhanced Data Management**: 
+  - Column-level permissions for SQLite tables
+  - Zod-validated model files for structured data
+  - Custom file type support for specialized content
+- **Advanced Validation**: Pre-deployment validation commands with detailed reporting
 - **User Management**: Role-based access control with authentication
 - **Automated Deployment**: GitHub Pages integration with build automation
-- **File Management**: Asset handling and file organization tools
+- **File Management**: Asset handling with glob pattern support and file organization tools
 - **Real-time Collaboration**: Git-based version control and conflict resolution
+- **Security**: SQL injection protection and sanitized database operations
 
 ## Architecture
 

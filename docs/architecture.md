@@ -269,9 +269,9 @@ CREATE TABLE site_permissions (
 
 ## CMS Engine Architecture
 
-### Content Manager Design
+### Content Manager Design (Refactored)
 
-The Content Manager provides unified interfaces for different file types:
+The Content Manager provides unified interfaces for different file types with enhanced configuration and validation:
 
 ```typescript
 interface ContentManagerArchitecture {
@@ -289,16 +289,99 @@ interface ContentManagerArchitecture {
   };
   
   sqlite: {
-    getTables(dbPath: string): Promise<TableInfo[]>;
-    getTableData(dbPath: string, table: string): Promise<RowData[]>;
-    insertRow(dbPath: string, table: string, data: Record<string, any>): Promise<OperationResult>;
-    updateRow(dbPath: string, table: string, id: number, data: Record<string, any>): Promise<OperationResult>;
+    // New sanitized operations with column-level permissions
+    getSQLiteTableData(config: SiteConfig, dbPath: string, table: string): Promise<TableResult>;
+    insertTableRow(config: SiteConfig, dbPath: string, table: string, data: Record<string, any>): Promise<OperationResult>;
+    updateTableRow(config: SiteConfig, dbPath: string, table: string, id: any, data: Record<string, any>): Promise<OperationResult>;
+    deleteTableRow(config: SiteConfig, dbPath: string, table: string, id: any): Promise<OperationResult>;
+    getFullTable(config: SiteConfig, dbPath: string, table: string): Promise<TableResult>;
   };
   
   asset: {
     uploadFile(path: string, buffer: Buffer): Promise<OperationResult>;
     getFileInfo(path: string): Promise<AssetInfo>;
     deleteAsset(path: string): Promise<OperationResult>;
+  };
+  
+  common: {
+    // Enhanced file type detection with custom type support
+    determineFileType(fileName: string, siteConfig?: SiteConfig): string;
+    isTextFileType(fileType: string, siteConfig?: SiteConfig): boolean;
+    matchesGlobPattern(pattern: string, filePath: string, basePath: string): Promise<boolean>;
+    resolveGlobPatterns(patterns: string[], basePath: string): Promise<string[]>;
+  };
+}
+```
+
+#### Enhanced Site Configuration
+
+The refactored system supports comprehensive site configuration:
+
+```typescript
+interface SiteConfig {
+  id: string;
+  name: string;
+  githubRepositoryUrl: string;
+  githubPat: string;
+  localPath: string;
+  buildCommand?: string;
+  buildOutputDir?: string;
+  validateCommand?: string;        // NEW: Pre-deployment validation
+  editablePaths?: string[];
+  sqliteFiles?: SQLiteFileConfig[]; // NEW: Enhanced with glob support
+  modelFiles?: ModelFileConfig[];   // NEW: Zod-validated data models
+  customFileTypes?: CustomFileTypeConfig[]; // NEW: Extensible file type system
+}
+
+interface SQLiteFileConfig {
+  filePath: string;                // NEW: Supports glob patterns
+  editableTables: SQLiteTableConfig[];
+}
+
+interface SQLiteTableConfig {
+  tableName: string;
+  editableColumns?: string[];      // NEW: Optional, defaults to all columns
+  readableColumns?: string[];      // NEW: Separate read permissions
+  displayName?: string;
+  defaultValues?: Record<string, any>; // NEW: Default values for new rows
+  primaryKeyStrategy?: 'auto_increment' | 'random_string' | 'timestamp' | 'custom'; // NEW
+}
+
+interface ModelFileConfig {
+  filePath: string;               // Supports glob patterns
+  zodValidator: string;           // Plain text Zod definition
+  displayName?: string;
+}
+
+interface CustomFileTypeConfig {
+  name: string;
+  extensions: string[];
+  displayName?: string;
+  isText?: boolean;              // Whether to treat as text file
+}
+```
+
+#### Validation and Security Enhancements
+
+The refactored system includes comprehensive validation:
+
+```typescript
+interface ValidationLayer {
+  configValidator: {
+    validateSiteConfig(config: SiteConfig): string[];
+    validateSQLiteConfigWithGlob(config: SiteConfig, path: string): Promise<ValidationResult>;
+    validateModelFileConfigWithGlob(config: SiteConfig, path: string): Promise<ValidationResult>;
+    createZodValidator(definition: string): ValidationResult;
+  };
+  
+  sqliteSecurity: {
+    sanitizeIdentifier(identifier: string): string;
+    sanitizeValue(value: any): any;
+    generatePrimaryKeyValue(strategy: string): any;
+  };
+  
+  commandValidation: {
+    executeValidation(siteConfig: SiteConfig): Promise<ValidationResult>;
   };
 }
 ```
@@ -329,12 +412,17 @@ interface GitManagerCapabilities {
 }
 ```
 
-### Deployment Engine
+### Deployment Engine (Enhanced)
 
-The deployment engine manages build and deploy processes:
+The deployment engine manages validation, build and deploy processes:
 
 ```typescript
 interface DeploymentEngineArchitecture {
+  validation: {
+    executeValidation(siteConfig: SiteConfig): Promise<ValidationResult>;
+    validateBeforeDeploy(siteConfig: SiteConfig): Promise<boolean>;
+  };
+  
   builds: {
     executeCommand(siteConfig: SiteConfig, command: string): Promise<BuildResult>;
     watchBuildProcess(siteConfig: SiteConfig): AsyncIterator<BuildStatus>;
@@ -349,6 +437,15 @@ interface DeploymentEngineArchitecture {
     getBuildLogs(siteConfig: SiteConfig, buildId: string): Promise<string>;
     getDeploymentHistory(siteConfig: SiteConfig): Promise<DeploymentInfo[]>;
   };
+}
+
+interface ValidationResult {
+  success: boolean;
+  returnCode: number;
+  stdout: string;
+  stderr: string;
+  executionTime: number;
+  // Return codes: 0=success, 1=error, other=warning
 }
 ```
 

@@ -14,7 +14,11 @@ interface SiteFormData {
   localPath: string;
   buildCommand: string;
   buildOutputDir: string;
+  validateCommand: string;
   editablePaths: string;
+  sqliteFiles: string; // JSON string representation
+  modelFiles: string; // JSON string representation  
+  customFileTypes: string; // JSON string representation
 }
 
 export default function CreateSite() {
@@ -36,12 +40,40 @@ export default function CreateSite() {
       localPath: '',
       buildCommand: '',
       buildOutputDir: '',
+      validateCommand: '',
       editablePaths: '',
+      sqliteFiles: '[]',
+      modelFiles: '[]',
+      customFileTypes: '[]',
     },
   });
 
   const onSubmit = async (data: SiteFormData) => {
     try {
+      // Parse JSON fields with validation
+      let sqliteFiles, modelFiles, customFileTypes;
+      
+      try {
+        sqliteFiles = data.sqliteFiles?.trim() ? JSON.parse(data.sqliteFiles) : undefined;
+      } catch (e) {
+        setError('sqliteFiles', { message: 'Invalid JSON format for SQLite files configuration' });
+        return;
+      }
+      
+      try {
+        modelFiles = data.modelFiles?.trim() ? JSON.parse(data.modelFiles) : undefined;
+      } catch (e) {
+        setError('modelFiles', { message: 'Invalid JSON format for model files configuration' });
+        return;
+      }
+      
+      try {
+        customFileTypes = data.customFileTypes?.trim() ? JSON.parse(data.customFileTypes) : undefined;
+      } catch (e) {
+        setError('customFileTypes', { message: 'Invalid JSON format for custom file types configuration' });
+        return;
+      }
+
       await createSiteMutation.mutateAsync({
         name: data.name.trim(),
         description: data.description?.trim() || undefined,
@@ -50,7 +82,11 @@ export default function CreateSite() {
         localPath: data.localPath.trim(),
         buildCommand: data.buildCommand?.trim() || undefined,
         buildOutputDir: data.buildOutputDir?.trim() || undefined,
+        validateCommand: data.validateCommand?.trim() || undefined,
         editablePaths: data.editablePaths?.trim() || undefined,
+        sqliteFiles,
+        modelFiles,
+        customFileTypes,
       });
       
       // Navigate back to sites list on success
@@ -239,6 +275,81 @@ export default function CreateSite() {
               <p className={formStyles.helpText}>
                 Comma-separated list of directories that can be edited through the CMS (relative to site root).
               </p>
+            </div>
+
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
+                Validate Command
+              </label>
+              <input
+                type="text"
+                {...register('validateCommand')}
+                placeholder="npm run validate"
+                className={formStyles.input}
+              />
+              <p className={formStyles.helpText}>
+                Optional command to validate the site before deployment. Return code 0=success, 1=error, other=warning.
+              </p>
+            </div>
+
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
+                SQLite Files Configuration
+              </label>
+              <textarea
+                {...register('sqliteFiles')}
+                placeholder="[]"
+                rows={5}
+                className={formStyles.textAreaLarge}
+              />
+              <p className={formStyles.helpText}>
+                JSON array defining SQLite database files and their editable tables. Example: {`[{"filePath": "data/*.db", "editableTables": [{"tableName": "posts", "editableColumns": ["title", "content"]}]}]`}
+              </p>
+              {errors.sqliteFiles && (
+                <div className={formStyles.errorMessage}>
+                  {errors.sqliteFiles.message}
+                </div>
+              )}
+            </div>
+
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
+                Model Files Configuration
+              </label>
+              <textarea
+                {...register('modelFiles')}
+                placeholder="[]"
+                rows={5}
+                className={formStyles.textAreaLarge}
+              />
+              <p className={formStyles.helpText}>
+                JSON array defining data model files with Zod validators. Example: {`[{"filePath": "content/*.json", "zodValidator": "z.object({title: z.string(), date: z.string().datetime()})", "displayName": "Articles"}]`}
+              </p>
+              {errors.modelFiles && (
+                <div className={formStyles.errorMessage}>
+                  {errors.modelFiles.message}
+                </div>
+              )}
+            </div>
+
+            <div className={formStyles.formGroup}>
+              <label className={formStyles.label}>
+                Custom File Types
+              </label>
+              <textarea
+                {...register('customFileTypes')}
+                placeholder="[]"
+                rows={4}
+                className={formStyles.textAreaLarge}
+              />
+              <p className={formStyles.helpText}>
+                JSON array defining custom file types for your site. Example: {`[{"name": "bibtex", "extensions": [".bib"], "displayName": "Bibliography", "isText": true}]`}
+              </p>
+              {errors.customFileTypes && (
+                <div className={formStyles.errorMessage}>
+                  {errors.customFileTypes.message}
+                </div>
+              )}
             </div>
           </div>
         </div>
