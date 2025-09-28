@@ -21,26 +21,16 @@ import { contentManager, gitManager, deploymentEngine } from '../engine/index.js
 import { SiteConfig } from '../engine/types.js';
 import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
 import { sanitizeFileUpload, bodyLimit } from '../middleware/security.js';
-import { LRUCache } from 'lru-cache';
 
 const engineRoutes = new Hono();
 
 engineRoutes.use('*', authMiddleware);
-
-const siteConfigCache = new LRUCache<string, Readonly<SiteConfig>>({
-  max: 100,
-  ttl: 1000 * 60 * 10 // 10 minutes
-});
 
 // Helper functions
 async function getSiteConfig(siteId: string): Promise<Readonly<SiteConfig> | null> {
   const site = await db.select().from(sites).where(eq(sites.id, siteId)).get();
   if (!site) {
     return null;
-  }
-
-  if (siteConfigCache.has(siteId)) {
-    return siteConfigCache.get(siteId)!;
   }
 
   const config: SiteConfig = {
@@ -54,7 +44,6 @@ async function getSiteConfig(siteId: string): Promise<Readonly<SiteConfig> | nul
     editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : undefined,
   };
 
-  siteConfigCache.set(siteId, config);
   return config;
 }
 
