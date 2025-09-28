@@ -4,16 +4,16 @@ import { sites, userSites, roles } from '../db/schema.js';
 import { eq, like, or, and, ne } from 'drizzle-orm';
 import { authMiddleware, requirePermission, requireSitePermission } from '../auth/middleware.js';
 import { validateJson, validateQuery, validateParams } from '../middleware/validation.js';
-import { 
-  createSiteSchema, 
-  updateSiteSchema, 
+import {
+  createSiteSchema,
+  updateSiteSchema,
   paginationSchema,
   searchSchema,
   idParamSchema
 } from '../schemas/index.js';
 import { SiteConfig } from '../engine/types.js';
-import { validateSiteConfig } from '../engine/config-examples.js';
 import crypto from 'crypto';
+import { ConfigValidator } from '../engine/content/config-validator.js';
 
 const siteRoutes = new Hono();
 
@@ -21,8 +21,8 @@ const siteRoutes = new Hono();
 siteRoutes.use('*', authMiddleware);
 
 // Get encryption key from environment, generate one if not present
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ? 
-  Buffer.from(process.env.ENCRYPTION_KEY, 'hex') : 
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?
+  Buffer.from(process.env.ENCRYPTION_KEY, 'hex') :
   crypto.randomBytes(32);
 
 /**
@@ -31,10 +31,10 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?
 function encryptPat(pat: string): { encryptedData: string; iv: string } {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
-  
+
   let encrypted = cipher.update(pat, 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  
+
   return {
     encryptedData: encrypted,
     iv: iv.toString('hex')
@@ -48,10 +48,10 @@ function decryptPat(encryptedPat: Buffer): string {
   try {
     const data = JSON.parse(encryptedPat.toString('utf8'));
     const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, Buffer.from(data.iv, 'hex'));
-    
+
     let decrypted = decipher.update(data.encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return decrypted;
   } catch (error) {
     console.error('Failed to decrypt PAT:', error);
@@ -83,34 +83,34 @@ siteRoutes.get('/', requirePermission('site.read'), validateQuery(paginationSche
   const offset = (page - 1) * limit;
   const user = c.get('user');
 
-    try {
-      const baseQuery = db.select({
-        id: sites.id,
-        name: sites.name,
-        githubRepositoryUrl: sites.githubRepositoryUrl,
-        localPath: sites.localPath,
-        buildCommand: sites.buildCommand,
-        buildOutputDir: sites.buildOutputDir,
-        editablePaths: sites.editablePaths,
-        isActive: sites.isActive,
-        createdAt: sites.createdAt,
-        updatedAt: sites.updatedAt
-      }).from(sites);
+  try {
+    const baseQuery = db.select({
+      id: sites.id,
+      name: sites.name,
+      githubRepositoryUrl: sites.githubRepositoryUrl,
+      localPath: sites.localPath,
+      buildCommand: sites.buildCommand,
+      buildOutputDir: sites.buildOutputDir,
+      editablePaths: sites.editablePaths,
+      isActive: sites.isActive,
+      createdAt: sites.createdAt,
+      updatedAt: sites.updatedAt
+    }).from(sites);
 
-      let sitesData;
-      
-      // Apply search filter if provided
-      if (q) {
-        sitesData = await baseQuery.where(
-          or(
-            like(sites.name, `%${q}%`),
-            like(sites.githubRepositoryUrl, `%${q}%`),
-            like(sites.localPath, `%${q}%`)
-          )
-        ).limit(limit).offset(offset);
-      } else {
-        sitesData = await baseQuery.limit(limit).offset(offset);
-      }
+    let sitesData;
+
+    // Apply search filter if provided
+    if (q) {
+      sitesData = await baseQuery.where(
+        or(
+          like(sites.name, `%${q}%`),
+          like(sites.githubRepositoryUrl, `%${q}%`),
+          like(sites.localPath, `%${q}%`)
+        )
+      ).limit(limit).offset(offset);
+    } else {
+      sitesData = await baseQuery.limit(limit).offset(offset);
+    }
 
     // Get total count for pagination
     const totalResult = await db.select({ count: sites.id }).from(sites);
@@ -153,9 +153,9 @@ siteRoutes.get('/:id', requireSitePermission('site.read'), validateParams(idPara
       createdAt: sites.createdAt,
       updatedAt: sites.updatedAt
     })
-    .from(sites)
-    .where(eq(sites.id, id))
-    .get();
+      .from(sites)
+      .where(eq(sites.id, id))
+      .get();
 
     if (!site) {
       return c.json({ error: 'Site not found' }, 404);
@@ -177,14 +177,14 @@ siteRoutes.get('/:id', requireSitePermission('site.read'), validateParams(idPara
  * POST /sites - Create new site
  */
 siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSchema), async (c) => {
-  const { 
-    name, 
-    githubRepositoryUrl, 
-    githubPat, 
-    localPath, 
-    buildCommand, 
-    buildOutputDir, 
-    editablePaths = [] 
+  const {
+    name,
+    githubRepositoryUrl,
+    githubPat,
+    localPath,
+    buildCommand,
+    buildOutputDir,
+    editablePaths = []
   } = c.get('validatedData');
   const user = c.get('user');
 
@@ -202,7 +202,7 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
     };
 
     // Validate site configuration
-    const configErrors = validateSiteConfig(siteConfig);
+    const configErrors = ConfigValidator.validateSiteConfig(siteConfig);
     if (configErrors.length > 0) {
       return c.json({
         error: 'Site configuration validation failed',
@@ -283,13 +283,13 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
  */
 siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idParamSchema), validateJson(updateSiteSchema), async (c) => {
   const { id } = c.get('validatedParams');
-  const { 
-    name, 
-    githubRepositoryUrl, 
-    githubPat, 
-    localPath, 
-    buildCommand, 
-    buildOutputDir, 
+  const {
+    name,
+    githubRepositoryUrl,
+    githubPat,
+    localPath,
+    buildCommand,
+    buildOutputDir,
     editablePaths,
     isActive
   } = c.get('validatedData');
@@ -414,7 +414,7 @@ siteRoutes.get('/:id/config', requireSitePermission('site.read'), validateParams
 
     return c.json({
       siteConfig,
-      validationErrors: validateSiteConfig(siteConfig)
+      validationErrors: ConfigValidator.validateSiteConfig(siteConfig)
     });
   } catch (error) {
     console.error('Get site config error:', error);
