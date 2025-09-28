@@ -1,7 +1,8 @@
 import simpleGit, { SimpleGit } from 'simple-git';
 import path from 'path';
 import fs from 'fs/promises';
-import { SiteConfig, GitOperationResult } from './types.js';
+import { spawn } from 'child_process';
+import { SiteConfig, GitOperationResult, ValidationResult } from './types.js';
 import { loggers, logHelpers } from '../utils/logger.js';
 
 /**
@@ -250,8 +251,104 @@ export class GitManager {
   }
 
   /**
-   * 构建带认证信息的Git URL
+   * 执行验证命令
    */
+  async executeValidation(siteConfig: SiteConfig): Promise<ValidationResult> {
+    const { validateCommand, localPath, id } = siteConfig;
+    
+    if (!validateCommand) {
+      return {
+        success: true,
+        returnCode: 0,
+        stdout: '',
+        stderr: '',
+        executionTime: 0
+      };
+    }
+
+    const startTime = Date.now();
+    
+    return new Promise((resolve) => {
+      const logs: string[] = [];
+      const errorLogs: string[] = [];
+      const [command, ...args] = validateCommand.split(' ');
+
+      loggers.git.info({
+        siteId: id,
+        command: validateCommand,
+        localPath
+      }, `Starting validation for site ${id}`);
+
+      const validationProcess = spawn(command, args, {
+        cwd: localPath,
+        stdio: ['inherit', 'pipe', 'pipe'],
+        shell: true
+      });
+
+      // 捕获标准输出
+      validationProcess.stdout?.on('data', (data) => {
+        const message = data.toString();
+        logs.push(message);
+      });
+
+      // 捕获标准错误
+      validationProcess.stderr?.on('data', (data) => {
+        const message = data.toString();
+        errorLogs.push(message);
+      });
+
+      // 处理进程结束
+      validationProcess.on('close', (code) => {
+        const executionTime = Date.now() - startTime;
+        const stdout = logs.join('');
+        const stderr = errorLogs.join('');
+        
+        let success: boolean;
+        if (code === 0) {
+          success = true;
+        } else if (code === 1) {
+          success = false; // Error
+        } else {
+          success = true; // Warning (other return codes)
+        }
+
+        loggers.git.info({
+          siteId: id,
+          returnCode: code,
+          executionTime,
+          stdoutLength: stdout.length,
+          stderrLength: stderr.length
+        }, `Validation completed for site ${id} with code ${code}`);
+
+        resolve({
+          success,
+          returnCode: code || 0,
+          stdout,
+          stderr,
+          executionTime
+        });
+      });
+
+      // 处理错误
+      validationProcess.on('error', (error) => {
+        const executionTime = Date.now() - startTime;
+        
+        loggers.git.error({
+          siteId: id,
+          error: error.message,
+          executionTime
+        }, `Validation failed for site ${id}`);
+        
+        resolve({
+          success: false,
+          returnCode: -1,
+          stdout: logs.join(''),
+          stderr: error.message,
+          executionTime
+        });
+      });
+    });
+  }
   private buildAuthenticatedUrl(repoUrl: string, pat: string): string {
     // 处理不同格式的GitHub URL
     let cleanUrl = repoUrl;

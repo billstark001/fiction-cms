@@ -1,4 +1,7 @@
-import { SiteConfig, SQLiteFileConfig } from '../types.js';
+import { SiteConfig, SQLiteFileConfig, ModelFileConfig, CustomFileTypeConfig } from '../types.js';
+import { z } from 'zod';
+import { glob } from 'glob';
+import path from 'path';
 
 /**
  * 配置验证工具类
@@ -34,6 +37,11 @@ export class ConfigValidator {
       errors.push('Local path cannot be empty');
     }
 
+    // 验证 validateCommand（如果提供）
+    if (config.validateCommand && config.validateCommand.trim().length === 0) {
+      errors.push('Validate command cannot be empty if provided');
+    }
+
     // Validate SQLite file configuration
     if (config.sqliteFiles) {
       config.sqliteFiles.forEach((sqliteFile, index) => {
@@ -49,7 +57,28 @@ export class ConfigValidator {
           if (!table.tableName) {
             errors.push(`SQLite file ${index + 1} table configuration ${tableIndex + 1} missing table name`);
           }
+          
+          // 验证主键策略
+          if (table.primaryKeyStrategy && !['auto_increment', 'random_string', 'timestamp', 'custom'].includes(table.primaryKeyStrategy)) {
+            errors.push(`SQLite file ${index + 1} table ${tableIndex + 1} has invalid primary key strategy`);
+          }
         });
+      });
+    }
+
+    // 验证 modelFiles
+    if (config.modelFiles && config.modelFiles.length > 0) {
+      config.modelFiles.forEach((modelFile, index) => {
+        const validationErrors = this.validateModelFileConfig(modelFile, index);
+        errors.push(...validationErrors);
+      });
+    }
+
+    // 验证 customFileTypes
+    if (config.customFileTypes && config.customFileTypes.length > 0) {
+      config.customFileTypes.forEach((customType, index) => {
+        const validationErrors = this.validateCustomFileTypeConfig(customType, index);
+        errors.push(...validationErrors);
       });
     }
 
@@ -78,7 +107,7 @@ export class ConfigValidator {
   }
 
   /**
-   * 验证SQLite文件配置
+   * 验证SQLite文件配置 (Legacy method, use validateSQLiteConfigWithGlob for glob support)
    */
   static validateSQLiteConfig(
     siteConfig: SiteConfig,
@@ -186,5 +215,159 @@ export class ConfigValidator {
     }
 
     return 'unknown';
+  }
+
+  /**
+   * 验证模型文件配置
+   */
+  static validateModelFileConfig(modelFile: ModelFileConfig, index: number): string[] {
+    const errors: string[] = [];
+
+    if (!modelFile.filePath) {
+      errors.push(`Model file configuration ${index + 1} file path cannot be empty`);
+    }
+
+    if (!modelFile.zodValidator) {
+      errors.push(`Model file configuration ${index + 1} zod validator cannot be empty`);
+    } else {
+      // 尝试验证zod validator语法
+      try {
+        // 创建一个简单的测试函数来验证语法
+        new Function('z', `return ${modelFile.zodValidator}`);
+      } catch (error) {
+        errors.push(`Model file configuration ${index + 1} has invalid zod validator syntax: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return errors;
+  }
+
+  /**
+   * 验证自定义文件类型配置
+   */
+  static validateCustomFileTypeConfig(customType: CustomFileTypeConfig, index: number): string[] {
+    const errors: string[] = [];
+
+    if (!customType.name || customType.name.trim().length === 0) {
+      errors.push(`Custom file type configuration ${index + 1} name cannot be empty`);
+    }
+
+    if (!customType.extensions || customType.extensions.length === 0) {
+      errors.push(`Custom file type configuration ${index + 1} must have at least one extension`);
+    } else {
+      customType.extensions.forEach((ext, extIndex) => {
+        if (!ext || ext.trim().length === 0) {
+          errors.push(`Custom file type configuration ${index + 1} extension ${extIndex + 1} cannot be empty`);
+        }
+      });
+    }
+
+    return errors;
+  }
+
+  /**
+   * 验证SQLite文件配置（使用glob支持）
+   */
+  static async validateSQLiteConfigWithGlob(
+    siteConfig: SiteConfig,
+    sqliteFilePath: string
+  ): Promise<{ isValid: boolean; configs?: SQLiteFileConfig[]; error?: string }> {
+    const { sqliteFiles = [] } = siteConfig;
+    
+    const matchingConfigs: SQLiteFileConfig[] = [];
+    
+    for (const config of sqliteFiles) {
+      try {
+        // 检查是否是直接匹配
+        if (config.filePath === sqliteFilePath) {
+          matchingConfigs.push(config);
+          continue;
+        }
+        
+        // 检查是否是glob模式匹配
+        const pattern = path.join(siteConfig.localPath, config.filePath);
+        const fullSqlitePath = path.join(siteConfig.localPath, sqliteFilePath);
+        const matches = await glob(pattern);
+        
+        if (matches.some(match => path.resolve(match) === path.resolve(fullSqlitePath))) {
+          matchingConfigs.push(config);
+        }
+      } catch (error) {
+        console.warn(`Error matching glob pattern ${config.filePath}:`, error);
+      }
+    }
+
+    if (matchingConfigs.length === 0) {
+      return {
+        isValid: false,
+        error: 'SQLite file is not in the allowed editable list'
+      };
+    }
+
+    return { isValid: true, configs: matchingConfigs };
+  }
+
+  /**
+   * 验证模型文件配置（使用glob支持）
+   */
+  static async validateModelFileConfigWithGlob(
+    siteConfig: SiteConfig,
+    modelFilePath: string
+  ): Promise<{ isValid: boolean; configs?: ModelFileConfig[]; error?: string }> {
+    const { modelFiles = [] } = siteConfig;
+    
+    const matchingConfigs: ModelFileConfig[] = [];
+    
+    for (const config of modelFiles) {
+      try {
+        // 检查是否是直接匹配
+        if (config.filePath === modelFilePath) {
+          matchingConfigs.push(config);
+          continue;
+        }
+        
+        // 检查是否是glob模式匹配
+        const pattern = path.join(siteConfig.localPath, config.filePath);
+        const fullModelPath = path.join(siteConfig.localPath, modelFilePath);
+        const matches = await glob(pattern);
+        
+        if (matches.some(match => path.resolve(match) === path.resolve(fullModelPath))) {
+          matchingConfigs.push(config);
+        }
+      } catch (error) {
+        console.warn(`Error matching glob pattern ${config.filePath}:`, error);
+      }
+    }
+
+    if (matchingConfigs.length === 0) {
+      return {
+        isValid: false,
+        error: 'Model file is not in the allowed editable list'
+      };
+    }
+
+    return { isValid: true, configs: matchingConfigs };
+  }
+
+  /**
+   * 验证zod模式并创建验证器
+   */
+  static createZodValidator(zodDefinition: string): { isValid: boolean; validator?: any; error?: string } {
+    try {
+      const validatorFunction = new Function('z', `return ${zodDefinition}`);
+      const validator = validatorFunction(z);
+      
+      // 基本验证，确保返回的是一个zod schema
+      if (validator && typeof validator.parse === 'function') {
+        return { isValid: true, validator };
+      } else {
+        return { isValid: false, error: 'Validator does not appear to be a valid zod schema' };
+      }
+    } catch (error) {
+      return {
+        isValid: false,
+        error: error instanceof Error ? error.message : 'Unknown error creating validator'
+      };
+    }
   }
 }

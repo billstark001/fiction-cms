@@ -72,7 +72,7 @@ export class SQLiteManager extends BaseManager {
         const allColumns = columnsInfo.map(col => col.name);
 
         // 过滤可编辑的列
-        const editableColumns = tableConfig.editableColumns.length > 0 
+        const editableColumns = (tableConfig.editableColumns && tableConfig.editableColumns.length > 0)
           ? tableConfig.editableColumns.filter(col => allColumns.includes(col))
           : allColumns;
 
