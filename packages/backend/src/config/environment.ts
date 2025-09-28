@@ -21,7 +21,7 @@ const envSchema = z.object({
   ENCRYPTION_KEY: z.string().length(64, 'ENCRYPTION_KEY must be exactly 64 hex characters').optional(),
   
   // CORS
-  FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+  FRONTEND_URL: z.url().default('http://localhost:3000'),
   
   // File limits
   MAX_FILE_SIZE: z.string().default('10485760').transform(Number), // 10MB
