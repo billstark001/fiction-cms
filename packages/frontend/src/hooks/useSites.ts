@@ -41,12 +41,24 @@ export function useCreateSite() {
       localPath: string;
       buildCommand?: string;
       buildOutputDir?: string;
+      validateCommand?: string;
       editablePaths?: string;
+      sqliteFiles?: any;
+      modelFiles?: any;
+      customFileTypes?: any;
       isActive?: boolean;
-    }) => apiClient.createSite({
-      ...siteData,
-      isActive: siteData.isActive ?? true,
-    }),
+    }) => {
+      // Transform string fields to arrays where needed
+      const transformedData = {
+        ...siteData,
+        editablePaths: siteData.editablePaths ? 
+          siteData.editablePaths.split(',').map(p => p.trim()).filter(p => p.length > 0) : 
+          undefined,
+        isActive: siteData.isActive ?? true,
+      };
+      
+      return apiClient.createSite(transformedData);
+    },
     onSuccess: () => {
       // Invalidate sites list to refetch
       queryClient.invalidateQueries({ queryKey: sitesKeys.lists() });

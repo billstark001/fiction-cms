@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from '@tanstack/react-router';
 import Layout from '../components/layout/Layout';
 import FileEditor from '../components/editor/FileEditor';
 import { createSiteContentStore, useDefaultSiteContentState } from '../store/siteContentStore';
+import { apiClient } from '../api/client';
 import { ArrowLeftIcon } from '../components/icons';
 import * as contentStyles from './SiteContentManagement.css';
 import * as pageStyles from '../styles/pages.css';
@@ -12,6 +13,17 @@ import * as commonStyles from '../styles/common.css';
 export default function SiteContentManagement() {
   const router = useRouter();
   const { siteId } = useParams({ from: '/sites/$siteId/manage' });
+
+  // Validation state
+  const [validationState, setValidationState] = useState<{
+    loading: boolean;
+    result: any | null;
+    error: string | null;
+  }>({
+    loading: false,
+    result: null,
+    error: null
+  });
 
   // Create store instance for this specific siteId
   const useStore = useMemo(() => {
@@ -76,6 +88,23 @@ export default function SiteContentManagement() {
     setFilterType('all');
   };
 
+  const handleValidation = async () => {
+    if (!siteId) return;
+    
+    setValidationState({ loading: true, result: null, error: null });
+    
+    try {
+      const result = await apiClient.validateSite(siteId);
+      setValidationState({ loading: false, result, error: null });
+    } catch (error) {
+      setValidationState({ 
+        loading: false, 
+        result: null, 
+        error: error instanceof Error ? error.message : 'Validation failed' 
+      });
+    }
+  };
+
   if (!useStore || loading) {
     return (
       <Layout>
@@ -102,6 +131,17 @@ export default function SiteContentManagement() {
             Manage files and content for site: {siteId}
           </p>
         </div>
+        
+        {/* Validation Controls */}
+        <div className={contentStyles.headerActions}>
+          <button
+            onClick={handleValidation}
+            disabled={validationState.loading}
+            className={formStyles.secondaryButton}
+          >
+            {validationState.loading ? 'Validating...' : 'Validate Site'}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -109,6 +149,58 @@ export default function SiteContentManagement() {
           {error}
           <button
             onClick={clearError}
+            className={contentStyles.errorDismissButton}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Validation Results */}
+      {validationState.result && (
+        <div className={`${pageStyles.card} ${
+          validationState.result.status === 'success' ? formStyles.successMessage :
+          validationState.result.status === 'warning' ? formStyles.infoMessage : 
+          formStyles.errorMessage
+        }`}>
+          <h3>Validation Result: {validationState.result.status.toUpperCase()}</h3>
+          <p>Return Code: {validationState.result.returnCode}</p>
+          <p>Execution Time: {validationState.result.executionTime}ms</p>
+          
+          {validationState.result.stdout && (
+            <div>
+              <strong>Output:</strong>
+              <pre className={contentStyles.validationOutput}>{validationState.result.stdout}</pre>
+            </div>
+          )}
+          
+          {validationState.result.stderr && (
+            <div>
+              <strong>Errors:</strong>
+              <pre className={contentStyles.validationOutput}>{validationState.result.stderr}</pre>
+            </div>
+          )}
+          
+          {!validationState.result.hasValidateCommand && (
+            <p className={formStyles.helpText}>
+              No validation command configured for this site.
+            </p>
+          )}
+          
+          <button
+            onClick={() => setValidationState({ loading: false, result: null, error: null })}
+            className={contentStyles.dismissButton}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {validationState.error && (
+        <div className={formStyles.errorMessage}>
+          Validation Error: {validationState.error}
+          <button
+            onClick={() => setValidationState({ loading: false, result: null, error: null })}
             className={contentStyles.errorDismissButton}
           >
             Dismiss

@@ -182,3 +182,42 @@ export const errorDismissButton = style({
     },
   },
 });
+
+// Header actions (for validation button)
+export const headerActions = style({
+  display: 'flex',
+  gap: '0.5rem',
+  alignItems: 'center',
+});
+
+// Validation output display
+export const validationOutput = style({
+  backgroundColor: '#f3f4f6',
+  border: '1px solid #d1d5db',
+  borderRadius: '0.375rem',
+  padding: '0.75rem',
+  fontSize: '0.75rem',
+  fontFamily: 'monospace',
+  whiteSpace: 'pre-wrap',
+  maxHeight: '200px',
+  overflowY: 'auto',
+  marginTop: '0.5rem',
+});
+
+// Dismiss button for validation results
+export const dismissButton = style({
+  marginTop: '1rem',
+  padding: '0.25rem 0.5rem',
+  backgroundColor: 'transparent',
+  border: '1px solid #6b7280',
+  borderRadius: '0.25rem',
+  color: '#6b7280',
+  fontSize: '0.75rem',
+  cursor: 'pointer',
+  
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#f9fafb',
+    },
+  },
+});
