@@ -18,6 +18,7 @@ import {
   paginationSchema
 } from '../schemas/index.js';
 import { contentManager, gitManager, deploymentEngine } from '../engine/index.js';
+import { ConfigValidator } from '../engine/content/config-validator.js';
 import { SiteConfig } from '../engine/types.js';
 import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
 import { sanitizeFileUpload, bodyLimit } from '../middleware/security.js';
@@ -41,7 +42,11 @@ async function getSiteConfig(siteId: string): Promise<Readonly<SiteConfig> | nul
     localPath: site.localPath,
     buildCommand: site.buildCommand || undefined,
     buildOutputDir: site.buildOutputDir || undefined,
+    validateCommand: site.validateCommand || undefined,
     editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : undefined,
+    sqliteFiles: site.sqliteFiles ? JSON.parse(site.sqliteFiles) : undefined,
+    modelFiles: site.modelFiles ? JSON.parse(site.modelFiles) : undefined,
+    customFileTypes: site.customFileTypes ? JSON.parse(site.customFileTypes) : undefined,
   };
 
   return config;
@@ -247,11 +252,26 @@ engineRoutes.get('/sites/:siteId/sqlite/:database/tables/:table',
     const tableName = c.req.param('table');
     const { limit, offset } = c.get('validatedQuery');
 
-    return handleSQLiteOperation(
-      c, siteId, database, tableName,
-      (siteConfig) => contentManager.sqlite.getSQLiteTableData(siteConfig, database, tableName, limit, offset),
-      'Table data retrieved successfully'
-    );
+    return withSiteConfig(c, siteId, async (siteConfig) => {
+      // Validate SQLite file access using ConfigValidator
+      const validation = await ConfigValidator.validateSQLiteConfigWithGlob(siteConfig, database);
+      if (!validation.isValid) {
+        return c.json({ error: validation.error }, 403);
+      }
+
+      // Validate table access
+      const tableValidation = ConfigValidator.validateTableAccess(validation.configs![0], tableName);
+      if (!tableValidation.isValid) {
+        return c.json({ error: tableValidation.error }, 403);
+      }
+
+      const result = await contentManager.sqlite.getSQLiteTableData(siteConfig, database, tableName, limit, offset);
+      if (!result.success) {
+        return c.json({ error: 'Failed to retrieve table data', details: result.error }, 500);
+      }
+
+      return c.json(createResponse('Table data retrieved successfully', { data: result.data }));
+    });
   }
 );
 
@@ -265,14 +285,34 @@ engineRoutes.post('/sites/:siteId/sqlite/:database/tables/:table/rows',
     const { data, commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
-    return handleSQLiteOperation(
-      c, siteId, database, tableName,
-      (siteConfig) => contentManager.sqlite.insertSQLiteData(siteConfig, database, tableName, [data]),
-      'Row created successfully',
-      [database],
-      user,
-      commitMessage || `Add row to ${tableName}`
-    );
+    return withSiteConfig(c, siteId, async (siteConfig) => {
+      // Validate SQLite file access using ConfigValidator
+      const validation = await ConfigValidator.validateSQLiteConfigWithGlob(siteConfig, database);
+      if (!validation.isValid) {
+        return c.json({ error: validation.error }, 403);
+      }
+
+      // Validate table access
+      const tableValidation = ConfigValidator.validateTableAccess(validation.configs![0], tableName);
+      if (!tableValidation.isValid) {
+        return c.json({ error: tableValidation.error }, 403);
+      }
+
+      // Use new insertTableRow method
+      const result = await contentManager.sqlite.insertTableRow(siteConfig, database, tableName, data);
+      if (!result.success) {
+        return c.json({ error: 'Failed to create row', details: result.error }, 500);
+      }
+
+      // Commit changes
+      const message = commitMessage || `Add row to ${tableName}`;
+      const commitResult = await commitChanges(siteConfig, [database], message, user);
+
+      return c.json(createResponse('Row created successfully', {
+        data: result.data,
+        commitHash: commitResult.hash || null
+      }));
+    });
   }
 );
 
@@ -287,17 +327,34 @@ engineRoutes.put('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId',
     const { data, commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
-    return handleSQLiteOperation(
-      c, siteId, database, tableName,
-      (siteConfig) => contentManager.sqlite.updateSQLiteData(siteConfig, database, tableName, [{
-        whereCondition: { id: rowId },
-        updateData: data
-      }]),
-      'Row updated successfully',
-      [database],
-      user,
-      commitMessage || `Update row ${rowId} in ${tableName}`
-    );
+    return withSiteConfig(c, siteId, async (siteConfig) => {
+      // Validate SQLite file access using ConfigValidator
+      const validation = await ConfigValidator.validateSQLiteConfigWithGlob(siteConfig, database);
+      if (!validation.isValid) {
+        return c.json({ error: validation.error }, 403);
+      }
+
+      // Validate table access
+      const tableValidation = ConfigValidator.validateTableAccess(validation.configs![0], tableName);
+      if (!tableValidation.isValid) {
+        return c.json({ error: tableValidation.error }, 403);
+      }
+
+      // Use new updateTableRow method
+      const result = await contentManager.sqlite.updateTableRow(siteConfig, database, tableName, rowId, data);
+      if (!result.success) {
+        return c.json({ error: 'Failed to update row', details: result.error }, 500);
+      }
+
+      // Commit changes
+      const message = commitMessage || `Update row ${rowId} in ${tableName}`;
+      const commitResult = await commitChanges(siteConfig, [database], message, user);
+
+      return c.json(createResponse('Row updated successfully', {
+        data: result.data,
+        commitHash: commitResult.hash || null
+      }));
+    });
   }
 );
 
@@ -312,14 +369,65 @@ engineRoutes.delete('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId',
     const { commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
-    return handleSQLiteOperation(
-      c, siteId, database, tableName,
-      (siteConfig) => contentManager.sqlite.deleteSQLiteData(siteConfig, database, tableName, [{ id: rowId }]),
-      'Row deleted successfully',
-      [database],
-      user,
-      commitMessage || `Delete row ${rowId} from ${tableName}`
-    );
+    return withSiteConfig(c, siteId, async (siteConfig) => {
+      // Validate SQLite file access using ConfigValidator
+      const validation = await ConfigValidator.validateSQLiteConfigWithGlob(siteConfig, database);
+      if (!validation.isValid) {
+        return c.json({ error: validation.error }, 403);
+      }
+
+      // Validate table access
+      const tableValidation = ConfigValidator.validateTableAccess(validation.configs![0], tableName);
+      if (!tableValidation.isValid) {
+        return c.json({ error: tableValidation.error }, 403);
+      }
+
+      // Use new deleteTableRow method
+      const result = await contentManager.sqlite.deleteTableRow(siteConfig, database, tableName, rowId);
+      if (!result.success) {
+        return c.json({ error: 'Failed to delete row', details: result.error }, 500);
+      }
+
+      // Commit changes
+      const message = commitMessage || `Delete row ${rowId} from ${tableName}`;
+      const commitResult = await commitChanges(siteConfig, [database], message, user);
+
+      return c.json(createResponse('Row deleted successfully', {
+        data: result.data,
+        commitHash: commitResult.hash || null
+      }));
+    });
+  }
+);
+
+// Validation endpoint
+engineRoutes.post('/sites/:siteId/validate',
+  requireSitePermission('content.read'),
+  validateParams(siteIdParamSchema),
+  async (c) => {
+    const { siteId } = c.get('validatedParams');
+
+    return withSiteConfig(c, siteId, async (siteConfig) => {
+      const validationResult = await gitManager.executeValidation(siteConfig);
+      
+      let status: 'success' | 'warning' | 'error';
+      if (validationResult.success && validationResult.returnCode === 0) {
+        status = 'success';
+      } else if (validationResult.returnCode === 1) {
+        status = 'error';
+      } else {
+        status = 'warning';
+      }
+
+      return c.json(createResponse('Validation completed', {
+        status,
+        returnCode: validationResult.returnCode,
+        stdout: validationResult.stdout,
+        stderr: validationResult.stderr,
+        executionTime: validationResult.executionTime,
+        hasValidateCommand: !!siteConfig.validateCommand
+      }));
+    });
   }
 );
 

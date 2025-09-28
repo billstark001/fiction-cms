@@ -45,7 +45,11 @@ export const sites = sqliteTable('sites', {
   localPath: text('local_path').notNull(),
   buildCommand: text('build_command'),
   buildOutputDir: text('build_output_dir'),
+  validateCommand: text('validate_command'), // New field
   editablePaths: text('editable_paths'), // JSON string array
+  sqliteFiles: text('sqlite_files'), // JSON string array - New field
+  modelFiles: text('model_files'), // JSON string array - New field
+  customFileTypes: text('custom_file_types'), // JSON string array - New field
   isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()).notNull(),
