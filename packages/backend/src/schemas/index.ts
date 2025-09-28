@@ -99,10 +99,47 @@ export const createPermissionSchema = z.object({
 });
 
 // Site management schemas
+const sqliteTableSchema = z.object({
+  tableName: z.string()
+    .min(1, 'Table name is required'),
+  displayName: z.string().optional(),
+  editableColumns: z.array(z.string().min(1)).optional(),
+  readableColumns: z.array(z.string().min(1)).optional(),
+  defaultValues: z.record(z.string(), z.any()).optional(),
+  primaryKeyStrategy: z.enum(['auto_increment', 'random_string', 'timestamp', 'custom']).optional(),
+});
+
+const sqliteFileSchema = z.object({
+  filePath: z.string()
+    .min(1, 'SQLite file path is required'),
+  editableTables: z.array(sqliteTableSchema)
+    .min(1, 'At least one table configuration is required'),
+});
+
+const modelFileSchema = z.object({
+  filePath: z.string()
+    .min(1, 'Model file path is required'),
+  zodValidator: z.string()
+    .min(1, 'Zod validator definition is required'),
+  displayName: z.string().optional(),
+});
+
+const customFileTypeSchema = z.object({
+  name: z.string()
+    .min(1, 'Custom file type name is required'),
+  extensions: z.array(z.string().min(1, 'Extension cannot be empty'))
+    .min(1, 'At least one extension is required'),
+  displayName: z.string().optional(),
+  isText: z.boolean().optional(),
+});
+
 export const createSiteSchema = z.object({
   name: z.string()
     .min(1, 'Site name is required')
     .max(100, 'Site name must be less than 100 characters'),
+  description: z.string()
+    .max(500, 'Description must be less than 500 characters')
+    .optional(),
   githubRepositoryUrl: z.string()
     .url('Invalid GitHub repository URL')
     .refine(url => url.includes('github.com'), 'Must be a GitHub repository URL'),
@@ -110,13 +147,21 @@ export const createSiteSchema = z.object({
   localPath: z.string().min(1, 'Local path is required'),
   buildCommand: z.string().optional(),
   buildOutputDir: z.string().optional(),
+  validateCommand: z.string().optional(),
   editablePaths: z.array(z.string()).optional(),
+  sqliteFiles: z.array(sqliteFileSchema).optional(),
+  modelFiles: z.array(modelFileSchema).optional(),
+  customFileTypes: z.array(customFileTypeSchema).optional(),
+  isActive: z.boolean().default(true),
 });
 
 export const updateSiteSchema = z.object({
   name: z.string()
     .min(1, 'Site name is required')
     .max(100, 'Site name must be less than 100 characters')
+    .optional(),
+  description: z.string()
+    .max(500, 'Description must be less than 500 characters')
     .optional(),
   githubRepositoryUrl: z.string()
     .url('Invalid GitHub repository URL')
@@ -126,7 +171,11 @@ export const updateSiteSchema = z.object({
   localPath: z.string().min(1, 'Local path is required').optional(),
   buildCommand: z.string().optional(),
   buildOutputDir: z.string().optional(),
+  validateCommand: z.string().optional(),
   editablePaths: z.array(z.string()).optional(),
+  sqliteFiles: z.array(sqliteFileSchema).optional(),
+  modelFiles: z.array(modelFileSchema).optional(),
+  customFileTypes: z.array(customFileTypeSchema).optional(),
   isActive: z.boolean().optional(),
 });
 

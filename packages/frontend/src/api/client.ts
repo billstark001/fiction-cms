@@ -72,6 +72,38 @@ export interface Site {
   isActive: boolean;
 }
 
+export interface CreateSiteRequest {
+  name: string;
+  description?: string | null;
+  githubRepositoryUrl: string;
+  githubPat: string;
+  localPath: string;
+  buildCommand?: string;
+  buildOutputDir?: string;
+  validateCommand?: string;
+  editablePaths?: string[];
+  sqliteFiles?: SQLiteFileConfig[];
+  modelFiles?: ModelFileConfig[];
+  customFileTypes?: CustomFileTypeConfig[];
+  isActive?: boolean;
+}
+
+export interface UpdateSiteRequest {
+  name?: string;
+  description?: string | null;
+  githubRepositoryUrl?: string;
+  githubPat?: string;
+  localPath?: string;
+  buildCommand?: string | null;
+  buildOutputDir?: string | null;
+  validateCommand?: string | null;
+  editablePaths?: string[];
+  sqliteFiles?: SQLiteFileConfig[];
+  modelFiles?: ModelFileConfig[];
+  customFileTypes?: CustomFileTypeConfig[];
+  isActive?: boolean;
+}
+
 export interface SQLiteFileConfig {
   filePath: string; // Supports glob patterns
   editableTables: SQLiteTableConfig[];
@@ -370,21 +402,24 @@ class ApiClient {
   }
 
   async getSiteById(id: string): Promise<Site> {
-    return this.request<Site>(`/sites/${id}`);
+    const response = await this.request<{ site: Site }>(`/sites/${id}`);
+    return response.site;
   }
 
-  async createSite(siteData: Omit<Site, 'id' | 'createdAt'>): Promise<Site> {
-    return this.request<Site>('/sites', {
+  async createSite(siteData: CreateSiteRequest): Promise<Site> {
+    const response = await this.request<{ site: Site } & ApiResponse>('/sites', {
       method: 'POST',
       body: JSON.stringify(siteData),
     });
+    return response.site;
   }
 
-  async updateSite(id: string, siteData: Partial<Omit<Site, 'id' | 'createdAt'>>): Promise<Site> {
-    return this.request<Site>(`/sites/${id}`, {
+  async updateSite(id: string, siteData: UpdateSiteRequest): Promise<Site> {
+    const response = await this.request<{ site: Site } & ApiResponse>(`/sites/${id}`, {
       method: 'PUT',
       body: JSON.stringify(siteData),
     });
+    return response.site;
   }
 
   async deleteSite(id: string): Promise<void> {

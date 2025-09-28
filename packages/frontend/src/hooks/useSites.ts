@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, Site } from '../api/client';
+import { apiClient, CreateSiteRequest, UpdateSiteRequest } from '../api/client';
 
 // Query keys
 export const sitesKeys = {
@@ -33,32 +33,7 @@ export function useCreateSite() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (siteData: {
-      name: string;
-      description?: string;
-      githubRepositoryUrl: string;
-      githubPat: string;
-      localPath: string;
-      buildCommand?: string;
-      buildOutputDir?: string;
-      validateCommand?: string;
-      editablePaths?: string;
-      sqliteFiles?: any;
-      modelFiles?: any;
-      customFileTypes?: any;
-      isActive?: boolean;
-    }) => {
-      // Transform string fields to arrays where needed
-      const transformedData = {
-        ...siteData,
-        editablePaths: siteData.editablePaths ? 
-          siteData.editablePaths.split(',').map(p => p.trim()).filter(p => p.length > 0) : 
-          undefined,
-        isActive: siteData.isActive ?? true,
-      };
-      
-      return apiClient.createSite(transformedData);
-    },
+    mutationFn: (siteData: CreateSiteRequest) => apiClient.createSite(siteData),
     onSuccess: () => {
       // Invalidate sites list to refetch
       queryClient.invalidateQueries({ queryKey: sitesKeys.lists() });
@@ -71,7 +46,7 @@ export function useUpdateSite(siteId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (updates: Partial<Site>) => apiClient.updateSite(siteId, updates),
+    mutationFn: (updates: UpdateSiteRequest) => apiClient.updateSite(siteId, updates),
     onSuccess: () => {
       // Invalidate both the specific site and the list
       queryClient.invalidateQueries({ queryKey: sitesKeys.detail(siteId) });

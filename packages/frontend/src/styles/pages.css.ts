@@ -199,6 +199,14 @@ export const paginationInfo = style({
   color: '#6b7280',
 });
 
+export const wideFormContainer = style({
+  maxWidth: '980px',
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2rem',
+});
+
 // Loading overlay
 export const loadingOverlay = style({
   position: 'fixed',

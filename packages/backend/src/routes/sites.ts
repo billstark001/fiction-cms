@@ -29,14 +29,123 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?
 const SITE_SELECT_FIELDS = {
   id: sites.id,
   name: sites.name,
+  description: sites.description,
   githubRepositoryUrl: sites.githubRepositoryUrl,
   localPath: sites.localPath,
   buildCommand: sites.buildCommand,
   buildOutputDir: sites.buildOutputDir,
+  validateCommand: sites.validateCommand,
   editablePaths: sites.editablePaths,
+  sqliteFiles: sites.sqliteFiles,
+  modelFiles: sites.modelFiles,
+  customFileTypes: sites.customFileTypes,
   isActive: sites.isActive,
   createdAt: sites.createdAt,
   updatedAt: sites.updatedAt
+};
+
+const sanitizeStringArray = (values?: string[] | null) => {
+  if (!values) return undefined;
+  const sanitized = values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value && value.length > 0));
+  return sanitized.length > 0 ? sanitized : undefined;
+};
+
+const sanitizeDefaultValues = (defaultValues?: Record<string, any> | null) => {
+  if (!defaultValues) return undefined;
+  const entries = Object.entries(defaultValues)
+    .map(([key, value]) => [key.trim(), typeof value === 'string' ? value.trim() : value])
+    .filter(([key]) => key.length > 0);
+
+  if (entries.length === 0) return undefined;
+
+  return Object.fromEntries(entries);
+};
+
+const sanitizeSQLiteFiles = (sqliteFiles?: any[] | null) => {
+  if (!sqliteFiles) return undefined;
+
+  const sanitized = sqliteFiles
+    .map((file) => {
+      const filePath = file?.filePath?.trim();
+      const editableTables = Array.isArray(file?.editableTables) ? file.editableTables : [];
+
+      const sanitizedTables = editableTables
+        .map((table: any) => {
+          const tableName = table?.tableName?.trim();
+          if (!tableName) return undefined;
+
+          const editableColumns = sanitizeStringArray(table?.editableColumns);
+          const readableColumns = sanitizeStringArray(table?.readableColumns);
+          const defaultValues = sanitizeDefaultValues(table?.defaultValues);
+          const primaryKeyStrategy = table?.primaryKeyStrategy;
+
+          return {
+            tableName,
+            displayName: table?.displayName?.trim() || undefined,
+            editableColumns,
+            readableColumns,
+            defaultValues,
+            primaryKeyStrategy
+          };
+        })
+        .filter((table: any): table is any => Boolean(table));
+
+      if (!filePath || sanitizedTables.length === 0) {
+        return undefined;
+      }
+
+      return {
+        filePath,
+        editableTables: sanitizedTables
+      };
+    })
+    .filter((file: any): file is any => Boolean(file));
+
+  return sanitized.length > 0 ? sanitized : undefined;
+};
+
+const sanitizeModelFiles = (modelFiles?: any[] | null) => {
+  if (!modelFiles) return undefined;
+
+  const sanitized = modelFiles
+    .map((file) => {
+      const filePath = file?.filePath?.trim();
+      const zodValidator = file?.zodValidator?.trim();
+      if (!filePath || !zodValidator) return undefined;
+
+      return {
+        filePath,
+        zodValidator,
+        displayName: file?.displayName?.trim() || undefined,
+      };
+    })
+    .filter((file: any): file is any => Boolean(file));
+
+  return sanitized.length > 0 ? sanitized : undefined;
+};
+
+const sanitizeCustomFileTypes = (customFileTypes?: any[] | null) => {
+  if (!customFileTypes) return undefined;
+
+  const sanitized = customFileTypes
+    .map((type) => {
+      const name = type?.name?.trim();
+      const extensions = sanitizeStringArray(type?.extensions) || [];
+
+      if (!name || extensions.length === 0) return undefined;
+
+      return {
+        name,
+        extensions,
+        displayName: type?.displayName?.trim() || undefined,
+        isText: typeof type?.isText === 'boolean' ? type.isText : undefined,
+      };
+    })
+    .filter((type: any): type is any => Boolean(type));
+
+  return sanitized.length > 0 ? sanitized : undefined;
 };
 
 /**
@@ -77,9 +186,23 @@ function decryptPat(encryptedPat: Buffer): string {
  * Transform site data for client response
  */
 function transformSiteData(site: any) {
+  const parseJson = (value: any, fallback: any) => {
+    if (!value) return fallback;
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.warn('Failed to parse site field JSON', error);
+      return fallback;
+    }
+  };
+
   return {
     ...site,
-    editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : []
+    editablePaths: parseJson(site.editablePaths, []),
+    sqliteFiles: parseJson(site.sqliteFiles, []),
+    modelFiles: parseJson(site.modelFiles, []),
+    customFileTypes: parseJson(site.customFileTypes, [])
   };
 }
 
@@ -87,6 +210,18 @@ function transformSiteData(site: any) {
  * Convert database site to SiteConfig
  */
 function dbSiteToSiteConfig(site: any): SiteConfig {
+  const parseOptionalJson = (value: any) => {
+    if (!value) return undefined;
+    if (typeof value !== 'string') return value;
+    try {
+      const parsed = JSON.parse(value);
+      return parsed;
+    } catch (error) {
+      console.warn('Failed to parse site config JSON', error);
+      return undefined;
+    }
+  };
+
   return {
     id: site.id,
     name: site.name,
@@ -95,7 +230,11 @@ function dbSiteToSiteConfig(site: any): SiteConfig {
     localPath: site.localPath,
     buildCommand: site.buildCommand || undefined,
     buildOutputDir: site.buildOutputDir || undefined,
-    editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : undefined,
+    validateCommand: site.validateCommand || undefined,
+    editablePaths: parseOptionalJson(site.editablePaths),
+    sqliteFiles: parseOptionalJson(site.sqliteFiles),
+    modelFiles: parseOptionalJson(site.modelFiles),
+    customFileTypes: parseOptionalJson(site.customFileTypes)
   };
 }
 
@@ -192,26 +331,48 @@ siteRoutes.get('/:id', requireSitePermission('site.read'), validateParams(idPara
 siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSchema), async (c) => {
   const {
     name,
+    description,
     githubRepositoryUrl,
     githubPat,
     localPath,
     buildCommand,
     buildOutputDir,
-    editablePaths = []
+    validateCommand,
+    editablePaths = [],
+    sqliteFiles,
+    modelFiles,
+    customFileTypes,
+    isActive = true
   } = c.get('validatedData');
   const user = c.get('user');
 
   try {
+    const normalizedName = name.trim();
+    const normalizedGithubUrl = githubRepositoryUrl.trim();
+    const normalizedLocalPath = localPath.trim();
+    const normalizedBuildCommand = buildCommand?.trim() || undefined;
+    const normalizedBuildOutputDir = buildOutputDir?.trim() || undefined;
+    const normalizedValidateCommand = validateCommand?.trim() || undefined;
+    const normalizedDescription = description?.trim() || undefined;
+    const sanitizedEditablePaths = sanitizeStringArray(editablePaths);
+    const sanitizedSqliteFiles = sanitizeSQLiteFiles(sqliteFiles);
+    const sanitizedModelFiles = sanitizeModelFiles(modelFiles);
+    const sanitizedCustomFileTypes = sanitizeCustomFileTypes(customFileTypes);
+
     // Create site config for validation
     const siteConfig: SiteConfig = {
       id: 'temp',
-      name,
-      githubRepositoryUrl,
-      githubPat,
-      localPath,
-      buildCommand,
-      buildOutputDir,
-      editablePaths
+      name: normalizedName,
+      githubRepositoryUrl: normalizedGithubUrl,
+      githubPat: githubPat.trim(),
+      localPath: normalizedLocalPath,
+      buildCommand: normalizedBuildCommand,
+      buildOutputDir: normalizedBuildOutputDir,
+      validateCommand: normalizedValidateCommand,
+      editablePaths: sanitizedEditablePaths,
+      sqliteFiles: sanitizedSqliteFiles,
+      modelFiles: sanitizedModelFiles,
+      customFileTypes: sanitizedCustomFileTypes
     };
 
     // Validate site configuration
@@ -224,26 +385,31 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
     }
 
     // Check if site name already exists
-    const existingSite = await checkSiteNameExists(name);
+    const existingSite = await checkSiteNameExists(normalizedName);
     if (existingSite) {
       return c.json({ error: 'Site name already exists' }, 409);
     }
 
     // Encrypt GitHub PAT
-    const encryptedPat = encryptPat(githubPat);
+    const encryptedPat = encryptPat(githubPat.trim());
     const encryptedPatBuffer = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
 
     // Create site
     const newSite = await db.insert(sites)
       .values({
-        name,
-        githubRepositoryUrl,
+        name: normalizedName,
+        description: normalizedDescription ?? null,
+        githubRepositoryUrl: normalizedGithubUrl,
         githubPatEncrypted: encryptedPatBuffer,
-        localPath,
-        buildCommand: buildCommand || null,
-        buildOutputDir: buildOutputDir || null,
-        editablePaths: editablePaths.length > 0 ? JSON.stringify(editablePaths) : null,
-        isActive: true
+        localPath: normalizedLocalPath,
+        buildCommand: normalizedBuildCommand ?? null,
+        buildOutputDir: normalizedBuildOutputDir ?? null,
+        validateCommand: normalizedValidateCommand ?? null,
+        editablePaths: sanitizedEditablePaths ? JSON.stringify(sanitizedEditablePaths) : null,
+        sqliteFiles: sanitizedSqliteFiles ? JSON.stringify(sanitizedSqliteFiles) : null,
+        modelFiles: sanitizedModelFiles ? JSON.stringify(sanitizedModelFiles) : null,
+        customFileTypes: sanitizedCustomFileTypes ? JSON.stringify(sanitizedCustomFileTypes) : null,
+        isActive
       })
       .returning(SITE_SELECT_FIELDS)
       .get();
@@ -279,12 +445,17 @@ siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idPar
   const { id } = c.get('validatedParams');
   const {
     name,
+    description,
     githubRepositoryUrl,
     githubPat,
     localPath,
     buildCommand,
     buildOutputDir,
+    validateCommand,
     editablePaths,
+    sqliteFiles,
+    modelFiles,
+    customFileTypes,
     isActive
   } = c.get('validatedData');
 
@@ -296,8 +467,9 @@ siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idPar
     }
 
     // Check if name already exists (excluding current site)
-    if (name) {
-      const existingName = await checkSiteNameExists(name, id);
+  const normalizedName = name?.trim();
+    if (normalizedName) {
+      const existingName = await checkSiteNameExists(normalizedName, id);
       if (existingName) {
         return c.json({ error: 'Site name already exists' }, 409);
       }
@@ -305,31 +477,78 @@ siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idPar
 
     // Prepare update data
     const updateData: any = { updatedAt: new Date() };
-    
-    // Build update object dynamically
-    const updates = {
-      name,
-      githubRepositoryUrl,
-      localPath,
-      buildCommand,
-      buildOutputDir,
-      isActive
-    };
 
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateData[key] = value;
-      }
-    });
+  const normalizedGithubUrl = githubRepositoryUrl?.trim() || undefined;
+  const normalizedLocalPath = localPath?.trim() || undefined;
+  const normalizedBuildCommand = buildCommand?.trim() || undefined;
+  const normalizedBuildOutputDir = buildOutputDir?.trim() || undefined;
+  const normalizedValidateCommand = validateCommand?.trim() || undefined;
+  const normalizedDescription = description?.trim() || undefined;
+    const sanitizedEditablePaths = editablePaths !== undefined ? sanitizeStringArray(editablePaths) : undefined;
+    const sanitizedSqliteFiles = sqliteFiles !== undefined ? sanitizeSQLiteFiles(sqliteFiles) : undefined;
+    const sanitizedModelFiles = modelFiles !== undefined ? sanitizeModelFiles(modelFiles) : undefined;
+    const sanitizedCustomFileTypes = customFileTypes !== undefined ? sanitizeCustomFileTypes(customFileTypes) : undefined;
+
+    if (name !== undefined) {
+      updateData.name = normalizedName;
+    }
+
+    if (description !== undefined) {
+      updateData.description = normalizedDescription ?? null;
+    }
+
+    if (githubRepositoryUrl !== undefined) {
+      updateData.githubRepositoryUrl = normalizedGithubUrl;
+    }
+
+    if (localPath !== undefined) {
+      updateData.localPath = normalizedLocalPath;
+    }
+
+    if (buildCommand !== undefined) {
+      updateData.buildCommand = normalizedBuildCommand ?? null;
+    }
+
+    if (buildOutputDir !== undefined) {
+      updateData.buildOutputDir = normalizedBuildOutputDir ?? null;
+    }
+
+    if (validateCommand !== undefined) {
+      updateData.validateCommand = normalizedValidateCommand ?? null;
+    }
+
+    if (isActive !== undefined) {
+      updateData.isActive = isActive;
+    }
 
     // Handle special cases
     if (githubPat !== undefined) {
-      const encryptedPat = encryptPat(githubPat);
+      const encryptedPat = encryptPat(githubPat.trim());
       updateData.githubPatEncrypted = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
     }
     
     if (editablePaths !== undefined) {
-      updateData.editablePaths = editablePaths.length > 0 ? JSON.stringify(editablePaths) : null;
+      updateData.editablePaths = sanitizedEditablePaths && sanitizedEditablePaths.length > 0
+        ? JSON.stringify(sanitizedEditablePaths)
+        : null;
+    }
+
+    if (sqliteFiles !== undefined) {
+      updateData.sqliteFiles = sanitizedSqliteFiles && sanitizedSqliteFiles.length > 0
+        ? JSON.stringify(sanitizedSqliteFiles)
+        : null;
+    }
+
+    if (modelFiles !== undefined) {
+      updateData.modelFiles = sanitizedModelFiles && sanitizedModelFiles.length > 0
+        ? JSON.stringify(sanitizedModelFiles)
+        : null;
+    }
+
+    if (customFileTypes !== undefined) {
+      updateData.customFileTypes = sanitizedCustomFileTypes && sanitizedCustomFileTypes.length > 0
+        ? JSON.stringify(sanitizedCustomFileTypes)
+        : null;
     }
 
     // Update site

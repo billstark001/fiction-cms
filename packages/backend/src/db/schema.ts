@@ -40,6 +40,7 @@ export const permissions = sqliteTable('permissions', {
 export const sites = sqliteTable('sites', {
   id: text('id').$defaultFn(() => createId()).primaryKey(),
   name: text('name').notNull(),
+  description: text('description'),
   githubRepositoryUrl: text('github_repository_url').notNull(),
   githubPatEncrypted: blob('github_pat_encrypted').notNull(),
   localPath: text('local_path').notNull(),

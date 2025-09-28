@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import Layout from '../components/layout/Layout';
-import { apiClient, Site } from '../api/client';
+import { apiClient, Site, UpdateSiteRequest } from '../api/client';
+import { useUpdateSite } from '../hooks/useSites';
+import { SiteEditorForm } from '../components/sites/SiteEditorForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody
+} from '../components/ui/Dialog';
 import { useAuth } from '../store/authStore';
 import { ExternalLinkIcon } from '../components/icons';
 import * as layoutStyles from '../components/layout/Layout.css';
@@ -31,6 +41,10 @@ export default function SiteManagement() {
     totalPages: 1,
     searchQuery: ''
   });
+  const [editingSite, setEditingSite] = useState<Site | null>(null);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const updateSiteMutation = useUpdateSite(editingSite?.id ?? '');
 
   useEffect(() => {
     loadSites();
@@ -83,7 +97,45 @@ export default function SiteManagement() {
     router.navigate({ to: `/sites/${siteId}/manage` });
   };
 
+  const handleEditSite = (site: Site) => {
+    setEditError(null);
+    updateSiteMutation.reset();
+    setEditingSite(site);
+    setDialogOpen(true);
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+
+    if (!open) {
+      setEditingSite(null);
+      setEditError(null);
+      updateSiteMutation.reset();
+    }
+  };
+
+  const handleUpdateSubmit = async (updates: UpdateSiteRequest) => {
+    if (!editingSite) {
+      return;
+    }
+
+    setEditError(null);
+
+    try {
+      const updatedSite = await updateSiteMutation.mutateAsync(updates);
+      setState((prev) => ({
+        ...prev,
+        sites: prev.sites.map((site) => (site.id === updatedSite.id ? updatedSite : site))
+      }));
+      handleDialogChange(false);
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : 'Failed to update site');
+    }
+  };
+
   const isAdmin = user?.roles?.some(role => role === 'admin') ?? false;
+  const dialogError =
+    editError ?? (updateSiteMutation.error instanceof Error ? updateSiteMutation.error.message : null);
 
   if (state.loading && state.sites.length === 0) {
     return (
@@ -177,6 +229,17 @@ export default function SiteManagement() {
                     <span className={site.isActive ? siteStyles.statusBadgeActive : siteStyles.statusBadgeInactive}>
                       {site.isActive ? 'Active' : 'Inactive'}
                     </span>
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditSite(site);
+                        }}
+                        className={siteStyles.editButton}
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -239,6 +302,29 @@ export default function SiteManagement() {
           Loading...
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+        <DialogContent size="full">
+          <DialogHeader>
+            <DialogTitle>Edit site</DialogTitle>
+            <DialogDescription>
+              Update repository, build, and editor settings for this site.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            {editingSite && (
+              <SiteEditorForm
+                mode="edit"
+                initialSite={editingSite}
+                onSubmit={handleUpdateSubmit}
+                onCancel={() => handleDialogChange(false)}
+                isSubmitting={updateSiteMutation.isPending}
+                error={dialogError}
+              />
+            )}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

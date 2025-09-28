@@ -99,6 +99,24 @@ export const manageButton = style([button, {
   },
 }]);
 
+export const editButton = style([button, {
+  backgroundColor: '#2563eb',
+  color: '#ffffff',
+  borderColor: '#2563eb',
+
+  selectors: {
+    '&:hover': {
+      backgroundColor: '#1d4ed8',
+    },
+
+    '&:disabled': {
+      backgroundColor: '#93c5fd',
+      borderColor: '#93c5fd',
+      cursor: 'not-allowed',
+    },
+  },
+}]);
+
 export const createSiteButton = style({
   padding: '0.75rem 1.5rem',
   backgroundColor: '#2563eb',
