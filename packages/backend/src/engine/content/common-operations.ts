@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import os from 'os';
 import path from 'path';
 import { glob } from 'glob';
 import { SiteConfig, FileOperationResult, ContentFile } from '../types.js';
@@ -164,6 +165,13 @@ export class CommonFileOperations {
 
     return files;
   }
+
+  expand(filepath: string): string {
+    if (filepath.startsWith("~")) {
+      return path.join(os.homedir(), filepath.slice(1));
+    }
+    return filepath;
+  };
 
   /**
    * 检查路径是否在允许的编辑范围内

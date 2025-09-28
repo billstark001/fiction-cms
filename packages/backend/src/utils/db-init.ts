@@ -22,7 +22,7 @@ export async function initializeDatabase() {
     // If no tables exist, create them manually
     if (result.length === 0) {
       loggers.database.info('No tables found, creating schema');
-      createTables();
+      await createTables();
     }
 
     // Seed database with default data

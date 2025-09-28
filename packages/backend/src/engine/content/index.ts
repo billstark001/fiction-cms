@@ -25,16 +25,21 @@ export class ContentManager {
    * 获取站点的所有可编辑文件列表
    */
   async getEditableFiles(siteConfig: SiteConfig): Promise<FileOperationResult> {
-    const { localPath, editablePaths = [], sqliteFiles = [] } = siteConfig;
+    const { localPath, editablePaths, sqliteFiles = [] } = siteConfig;
 
     try {
       const files: ContentFile[] = [];
 
       // 处理普通文件路径
-      for (const editablePath of editablePaths) {
-        const fullPath = path.join(localPath, editablePath);
-        const pathFiles = await commonFileOperations.scanDirectory(fullPath, localPath, siteConfig);
+      if (!editablePaths) {
+        const pathFiles = await commonFileOperations.scanDirectory(localPath, localPath, siteConfig);
         files.push(...pathFiles);
+      } else {
+        for (const editablePath of editablePaths) {
+          const fullPath = path.join(localPath, editablePath);
+          const pathFiles = await commonFileOperations.scanDirectory(fullPath, localPath, siteConfig);
+          files.push(...pathFiles);
+        }
       }
 
       // 处理SQLite文件
@@ -83,33 +88,6 @@ export class ContentManager {
     offset?: number
   ) {
     return this.sqlite.getSQLiteTableData(siteConfig, sqliteFilePath, tableName, limit, offset);
-  }
-
-  async updateSQLiteData(
-    siteConfig: SiteConfig,
-    sqliteFilePath: string,
-    tableName: string,
-    updates: Parameters<typeof sqliteManager.updateSQLiteData>[3]
-  ) {
-    return this.sqlite.updateSQLiteData(siteConfig, sqliteFilePath, tableName, updates);
-  }
-
-  async insertSQLiteData(
-    siteConfig: SiteConfig,
-    sqliteFilePath: string,
-    tableName: string,
-    insertData: Record<string, any>[]
-  ) {
-    return this.sqlite.insertSQLiteData(siteConfig, sqliteFilePath, tableName, insertData);
-  }
-
-  async deleteSQLiteData(
-    siteConfig: SiteConfig,
-    sqliteFilePath: string,
-    tableName: string,
-    whereConditions: Record<string, any>[]
-  ) {
-    return this.sqlite.deleteSQLiteData(siteConfig, sqliteFilePath, tableName, whereConditions);
   }
 
   // 资产文件操作的便捷方法

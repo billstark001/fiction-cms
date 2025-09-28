@@ -1,7 +1,6 @@
 import { db } from './index.js';
 import { roles, permissions, rolePermissions, users, userRoles, refreshTokens, userSites, sites } from './schema.js';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 import { loggers, logHelpers } from '../utils/logger.js';
 import { userService, roleService } from '../services/index.js';
 

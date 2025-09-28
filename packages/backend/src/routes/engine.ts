@@ -17,7 +17,7 @@ import {
   deploymentTriggerSchema,
   paginationSchema
 } from '../schemas/index.js';
-import { contentManager, gitManager, deploymentEngine } from '../engine/index.js';
+import { contentManager, gitManager, deploymentEngine, commonFileOperations } from '../engine/index.js';
 import { ConfigValidator } from '../engine/content/config-validator.js';
 import { SiteConfig } from '../engine/types.js';
 import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
@@ -39,7 +39,7 @@ async function getSiteConfig(siteId: string): Promise<Readonly<SiteConfig> | nul
     name: site.name,
     githubRepositoryUrl: site.githubRepositoryUrl,
     githubPat: (site.githubPatEncrypted as Buffer).toString('utf8'),
-    localPath: site.localPath,
+    localPath: commonFileOperations.expand(site.localPath),
     buildCommand: site.buildCommand || undefined,
     buildOutputDir: site.buildOutputDir || undefined,
     validateCommand: site.validateCommand || undefined,
