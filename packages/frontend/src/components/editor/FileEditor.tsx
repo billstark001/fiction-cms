@@ -21,7 +21,7 @@ export default function FileEditor({ filePath, fileType, content, onSave }: File
   // Reset store when content changes
   useEffect(() => {
     store.reset(content);
-  }, [content, store]);
+  }, [content]);
 
   const handleSave = async () => {
     if (store.saving) return;

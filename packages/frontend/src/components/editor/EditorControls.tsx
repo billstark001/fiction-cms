@@ -56,7 +56,7 @@ export default function EditorControls({
           {validationError && ' - Fix validation errors before saving'}
         </span>
         <span>
-          {characterCount.toLocaleString()} characters
+          {characterCount ?? 0} characters
         </span>
       </div>
     </>

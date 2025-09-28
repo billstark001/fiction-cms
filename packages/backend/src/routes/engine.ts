@@ -98,11 +98,11 @@ engineRoutes.get('/sites/:siteId/files',
   }
 );
 
-engineRoutes.get('/sites/:siteId/files/*',
+engineRoutes.get('/sites/:siteId/files/:filePath',
   requireSitePermission('content.read'),
   async (c) => {
     const siteId = c.req.param('siteId');
-    const filePath = c.req.param('*');
+    const filePath = c.req.param('filePath');
 
     if (!filePath) return c.json({ error: 'File path is required' }, 400);
 
@@ -117,12 +117,12 @@ engineRoutes.get('/sites/:siteId/files/*',
   }
 );
 
-engineRoutes.put('/sites/:siteId/files/*',
+engineRoutes.put('/sites/:siteId/files/:filePath',
   requireSitePermission('content.write'),
   validateJson(fileOperationSchema),
   async (c) => {
     const siteId = c.req.param('siteId');
-    const filePath = c.req.param('*');
+    const filePath = c.req.param('filePath');
     const { content, commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
@@ -181,11 +181,11 @@ engineRoutes.post('/sites/:siteId/files',
   }
 );
 
-engineRoutes.delete('/sites/:siteId/files/*',
+engineRoutes.delete('/sites/:siteId/files/:filePath',
   requireSitePermission('content.delete'),
   async (c) => {
     const siteId = c.req.param('siteId');
-    const filePath = c.req.param('*');
+    const filePath = c.req.param('filePath');
     const user = c.get('user');
 
     if (!filePath) return c.json({ error: 'File path is required' }, 400);

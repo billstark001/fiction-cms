@@ -5,12 +5,15 @@
 
 export * from './user-service.js';
 export * from './role-service.js';
+export * from './site-service.js';
 
 // 便捷导入
 import { userService } from './user-service.js';
 import { roleService } from './role-service.js';
+import { siteService } from './site-service.js';
 
 export const services = {
   user: userService,
-  role: roleService
+  role: roleService,
+  site: siteService
 };

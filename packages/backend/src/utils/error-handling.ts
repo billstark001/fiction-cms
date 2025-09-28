@@ -216,7 +216,7 @@ export class RateLimiter {
   
   constructor(
     private windowMs: number = 15 * 60 * 1000, // 15 minutes
-    private maxRequests: number = 100
+    private maxRequests: number = 1000
   ) {}
   
   isAllowed(identifier: string): boolean {
