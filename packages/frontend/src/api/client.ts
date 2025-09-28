@@ -23,7 +23,7 @@ export interface PaginationInfo {
   page: number;
   limit: number;
   total: number;
-  totalPages: number; 
+  totalPages: number;
 }
 
 export interface PaginationResponse<T> {
@@ -153,6 +153,28 @@ export interface Role {
   description?: string | null;
 }
 
+export interface EditableFilesResponse {
+  files: Array<{
+    path: string;
+    type: string; // Changed to support custom file types
+    size: number;
+    lastModified: string;
+  }>;
+  timestamp: string;
+}
+
+export interface FileContentResponse {
+  content: {
+    content: string;
+    path: string;
+    size: number;
+    lastModified: string;
+    created: string;
+  },
+  path: string;
+  timestamp: string;
+}
+
 /**
  * API client class with token management
  */
@@ -234,7 +256,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers as Record<string, string>,
@@ -264,11 +286,11 @@ class ApiClient {
             headers.Authorization = `Bearer ${this.accessToken}`;
             const retryResponse = await fetch(url, { ...config, headers });
             const retryData = await retryResponse.json();
-            
+
             if (!retryResponse.ok) {
               throw new Error(retryData.error || `HTTP ${retryResponse.status}: ${retryResponse.statusText}`);
             }
-            
+
             return retryData;
           } else {
             // Refresh failed, clear tokens
@@ -276,7 +298,7 @@ class ApiClient {
             throw new Error('Session expired. Please login again.');
           }
         }
-        
+
         throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -312,7 +334,7 @@ class ApiClient {
         this.setAccessToken(data.accessToken);
         return true;
       }
-      
+
       return false;
     } catch {
       return false;
@@ -394,10 +416,10 @@ class ApiClient {
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.limit) queryParams.set('limit', params.limit.toString());
     if (params?.q) queryParams.set('q', params.q);
-    
+
     const queryString = queryParams.toString();
     const url = queryString ? `/sites?${queryString}` : '/sites';
-    
+
     return this.request<PaginationResponse<Site>>(url);
   }
 
@@ -427,24 +449,12 @@ class ApiClient {
   }
 
   // Content management API functions
-  async getEditableFiles(siteId: string): Promise<{
-    files: Array<{
-      path: string;
-      type: string; // Changed to support custom file types
-      size: number;
-      lastModified: string;
-    }>;
-    timestamp: string;
-  }> {
-    return this.request<any>(`/engine/sites/${siteId}/files`);
+  async getEditableFiles(siteId: string): Promise<EditableFilesResponse> {
+    return this.request<EditableFilesResponse>(`/engine/sites/${siteId}/files`);
   }
 
-  async getFileContent(siteId: string, filePath: string): Promise<{
-    content: string;
-    path: string;
-    timestamp: string;
-  }> {
-    return this.request<any>(`/engine/sites/${siteId}/files/${encodeURIComponent(filePath)}`);
+  async getFileContent(siteId: string, filePath: string): Promise<FileContentResponse> {
+    return this.request<FileContentResponse>(`/engine/sites/${siteId}/files/${encodeURIComponent(filePath)}`);
   }
 
   async updateFileContent(siteId: string, filePath: string, content: string, commitMessage?: string): Promise<{

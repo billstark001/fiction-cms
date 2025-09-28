@@ -76,7 +76,7 @@ export const createSiteContentStore = (siteId: string) => {
         set({ loadingContent: true });
         const response = await apiClient.getFileContent(siteId, filePath);
         set({
-          fileContent: response.content,
+          fileContent: response.content.content,
           selectedFile: filePath,
           loadingContent: false
         });
