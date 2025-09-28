@@ -25,6 +25,20 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?
   Buffer.from(process.env.ENCRYPTION_KEY, 'hex') :
   crypto.randomBytes(32);
 
+// Common database selection fields for sites
+const SITE_SELECT_FIELDS = {
+  id: sites.id,
+  name: sites.name,
+  githubRepositoryUrl: sites.githubRepositoryUrl,
+  localPath: sites.localPath,
+  buildCommand: sites.buildCommand,
+  buildOutputDir: sites.buildOutputDir,
+  editablePaths: sites.editablePaths,
+  isActive: sites.isActive,
+  createdAt: sites.createdAt,
+  updatedAt: sites.updatedAt
+};
+
 /**
  * Encrypt GitHub PAT for secure storage using AES-256-CBC
  */
@@ -60,6 +74,16 @@ function decryptPat(encryptedPat: Buffer): string {
 }
 
 /**
+ * Transform site data for client response
+ */
+function transformSiteData(site: any) {
+  return {
+    ...site,
+    editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : []
+  };
+}
+
+/**
  * Convert database site to SiteConfig
  */
 function dbSiteToSiteConfig(site: any): SiteConfig {
@@ -76,51 +100,61 @@ function dbSiteToSiteConfig(site: any): SiteConfig {
 }
 
 /**
+ * Find site by ID with error handling
+ */
+async function findSiteById(id: string) {
+  return await db.select(SITE_SELECT_FIELDS)
+    .from(sites)
+    .where(eq(sites.id, id))
+    .get();
+}
+
+/**
+ * Check if site name exists (optionally excluding a specific ID)
+ */
+async function checkSiteNameExists(name: string, excludeId?: string) {
+  const whereClause = excludeId ? 
+    and(eq(sites.name, name), ne(sites.id, excludeId)) :
+    eq(sites.name, name);
+    
+  return await db.select().from(sites).where(whereClause).get();
+}
+
+/**
+ * Handle common errors
+ */
+function handleError(error: any, operation: string, c: any) {
+  console.error(`${operation} error:`, error);
+  return c.json({ error: 'Internal server error' }, 500);
+}
+
+/**
  * GET /sites - List sites with pagination and search
  */
 siteRoutes.get('/', requirePermission('site.read'), validateQuery(paginationSchema.merge(searchSchema.partial())), async (c) => {
   const { page, limit, orderBy = 'name', orderDirection, q } = c.get('validatedQuery');
   const offset = (page - 1) * limit;
-  const user = c.get('user');
 
   try {
-    const baseQuery = db.select({
-      id: sites.id,
-      name: sites.name,
-      githubRepositoryUrl: sites.githubRepositoryUrl,
-      localPath: sites.localPath,
-      buildCommand: sites.buildCommand,
-      buildOutputDir: sites.buildOutputDir,
-      editablePaths: sites.editablePaths,
-      isActive: sites.isActive,
-      createdAt: sites.createdAt,
-      updatedAt: sites.updatedAt
-    }).from(sites);
-
-    let sitesData;
+    const baseQuery = db.select(SITE_SELECT_FIELDS).from(sites);
 
     // Apply search filter if provided
-    if (q) {
-      sitesData = await baseQuery.where(
+    const sitesData = q ? 
+      await baseQuery.where(
         or(
           like(sites.name, `%${q}%`),
           like(sites.githubRepositoryUrl, `%${q}%`),
           like(sites.localPath, `%${q}%`)
         )
-      ).limit(limit).offset(offset);
-    } else {
-      sitesData = await baseQuery.limit(limit).offset(offset);
-    }
+      ).limit(limit).offset(offset) :
+      await baseQuery.limit(limit).offset(offset);
 
     // Get total count for pagination
     const totalResult = await db.select({ count: sites.id }).from(sites);
     const total = totalResult.length;
 
     return c.json({
-      items: sitesData.map(site => ({
-        ...site,
-        editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : []
-      })),
+      items: sitesData.map(transformSiteData),
       pagination: {
         page,
         limit,
@@ -129,8 +163,7 @@ siteRoutes.get('/', requirePermission('site.read'), validateQuery(paginationSche
       }
     });
   } catch (error) {
-    console.error('List sites error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'List sites', c);
   }
 });
 
@@ -141,35 +174,15 @@ siteRoutes.get('/:id', requireSitePermission('site.read'), validateParams(idPara
   const { id } = c.get('validatedParams');
 
   try {
-    const site = await db.select({
-      id: sites.id,
-      name: sites.name,
-      githubRepositoryUrl: sites.githubRepositoryUrl,
-      localPath: sites.localPath,
-      buildCommand: sites.buildCommand,
-      buildOutputDir: sites.buildOutputDir,
-      editablePaths: sites.editablePaths,
-      isActive: sites.isActive,
-      createdAt: sites.createdAt,
-      updatedAt: sites.updatedAt
-    })
-      .from(sites)
-      .where(eq(sites.id, id))
-      .get();
+    const site = await findSiteById(id);
 
     if (!site) {
       return c.json({ error: 'Site not found' }, 404);
     }
 
-    return c.json({
-      site: {
-        ...site,
-        editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : []
-      }
-    });
+    return c.json({ site: transformSiteData(site) });
   } catch (error) {
-    console.error('Get site error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Get site', c);
   }
 });
 
@@ -191,7 +204,7 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
   try {
     // Create site config for validation
     const siteConfig: SiteConfig = {
-      id: 'temp', // Will be replaced with actual ID
+      id: 'temp',
       name,
       githubRepositoryUrl,
       githubPat,
@@ -211,11 +224,7 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
     }
 
     // Check if site name already exists
-    const existingSite = await db.select()
-      .from(sites)
-      .where(eq(sites.name, name))
-      .get();
-
+    const existingSite = await checkSiteNameExists(name);
     if (existingSite) {
       return c.json({ error: 'Site name already exists' }, 409);
     }
@@ -236,18 +245,7 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
         editablePaths: editablePaths.length > 0 ? JSON.stringify(editablePaths) : null,
         isActive: true
       })
-      .returning({
-        id: sites.id,
-        name: sites.name,
-        githubRepositoryUrl: sites.githubRepositoryUrl,
-        localPath: sites.localPath,
-        buildCommand: sites.buildCommand,
-        buildOutputDir: sites.buildOutputDir,
-        editablePaths: sites.editablePaths,
-        isActive: sites.isActive,
-        createdAt: sites.createdAt,
-        updatedAt: sites.updatedAt
-      })
+      .returning(SITE_SELECT_FIELDS)
       .get();
 
     // Assign the creator as site admin
@@ -267,14 +265,10 @@ siteRoutes.post('/', requirePermission('site.admin'), validateJson(createSiteSch
 
     return c.json({
       message: 'Site created successfully',
-      site: {
-        ...newSite,
-        editablePaths: newSite.editablePaths ? JSON.parse(newSite.editablePaths) : []
-      }
+      site: transformSiteData(newSite)
     }, 201);
   } catch (error) {
-    console.error('Create site error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Create site', c);
   }
 });
 
@@ -296,22 +290,14 @@ siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idPar
 
   try {
     // Check if site exists
-    const existingSite = await db.select()
-      .from(sites)
-      .where(eq(sites.id, id))
-      .get();
-
+    const existingSite = await findSiteById(id);
     if (!existingSite) {
       return c.json({ error: 'Site not found' }, 404);
     }
 
     // Check if name already exists (excluding current site)
     if (name) {
-      const existingName = await db.select()
-        .from(sites)
-        .where(and(eq(sites.name, name), ne(sites.id, id)))
-        .get();
-
+      const existingName = await checkSiteNameExists(name, id);
       if (existingName) {
         return c.json({ error: 'Site name already exists' }, 409);
       }
@@ -319,48 +305,46 @@ siteRoutes.put('/:id', requireSitePermission('site.admin'), validateParams(idPar
 
     // Prepare update data
     const updateData: any = { updatedAt: new Date() };
-    if (name !== undefined) updateData.name = name;
-    if (githubRepositoryUrl !== undefined) updateData.githubRepositoryUrl = githubRepositoryUrl;
+    
+    // Build update object dynamically
+    const updates = {
+      name,
+      githubRepositoryUrl,
+      localPath,
+      buildCommand,
+      buildOutputDir,
+      isActive
+    };
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    });
+
+    // Handle special cases
     if (githubPat !== undefined) {
       const encryptedPat = encryptPat(githubPat);
       updateData.githubPatEncrypted = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
     }
-    if (localPath !== undefined) updateData.localPath = localPath;
-    if (buildCommand !== undefined) updateData.buildCommand = buildCommand;
-    if (buildOutputDir !== undefined) updateData.buildOutputDir = buildOutputDir;
+    
     if (editablePaths !== undefined) {
       updateData.editablePaths = editablePaths.length > 0 ? JSON.stringify(editablePaths) : null;
     }
-    if (isActive !== undefined) updateData.isActive = isActive;
 
     // Update site
     const updatedSite = await db.update(sites)
       .set(updateData)
       .where(eq(sites.id, id))
-      .returning({
-        id: sites.id,
-        name: sites.name,
-        githubRepositoryUrl: sites.githubRepositoryUrl,
-        localPath: sites.localPath,
-        buildCommand: sites.buildCommand,
-        buildOutputDir: sites.buildOutputDir,
-        editablePaths: sites.editablePaths,
-        isActive: sites.isActive,
-        createdAt: sites.createdAt,
-        updatedAt: sites.updatedAt
-      })
+      .returning(SITE_SELECT_FIELDS)
       .get();
 
     return c.json({
       message: 'Site updated successfully',
-      site: {
-        ...updatedSite,
-        editablePaths: updatedSite.editablePaths ? JSON.parse(updatedSite.editablePaths) : []
-      }
+      site: transformSiteData(updatedSite)
     });
   } catch (error) {
-    console.error('Update site error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Update site', c);
   }
 });
 
@@ -372,11 +356,7 @@ siteRoutes.delete('/:id', requirePermission('site.admin'), validateParams(idPara
 
   try {
     // Check if site exists
-    const existingSite = await db.select()
-      .from(sites)
-      .where(eq(sites.id, id))
-      .get();
-
+    const existingSite = await findSiteById(id);
     if (!existingSite) {
       return c.json({ error: 'Site not found' }, 404);
     }
@@ -389,8 +369,7 @@ siteRoutes.delete('/:id', requirePermission('site.admin'), validateParams(idPara
 
     return c.json({ message: 'Site deleted successfully' });
   } catch (error) {
-    console.error('Delete site error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Delete site', c);
   }
 });
 
@@ -417,8 +396,7 @@ siteRoutes.get('/:id/config', requireSitePermission('site.read'), validateParams
       validationErrors: ConfigValidator.validateSiteConfig(siteConfig)
     });
   } catch (error) {
-    console.error('Get site config error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return handleError(error, 'Get site config', c);
   }
 });
 
