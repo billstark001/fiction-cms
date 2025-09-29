@@ -1,6 +1,9 @@
 import { Link, useRouter } from '@tanstack/react-router';
 import { useAuth } from '../../store/authStore';
 import { useLogout } from '../../hooks/useAuth';
+import { useSiteManagerStore } from '../../store/siteManagerStore';
+import { ConfirmDialog } from '../ui/AlertDialog';
+import { useEffect, useState } from 'react';
 import * as styles from './Layout.css';
 
 interface LayoutProps {
@@ -24,6 +27,12 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const { user } = useAuth();
   const logoutMutation = useLogout();
+  const { openedSites, loadOpenedSites, closeSite } = useSiteManagerStore();
+  const [confirmClose, setConfirmClose] = useState<{ siteId: string; siteName?: string } | null>(null);
+
+  useEffect(() => {
+    loadOpenedSites();
+  }, [loadOpenedSites]);
 
   const handleLogout = async () => {
     try {
@@ -32,6 +41,22 @@ export default function Layout({ children }: LayoutProps) {
     } catch (error) {
       // Error is handled by the mutation
       console.error('Logout error:', error);
+    }
+  };
+
+  const handleCloseSite = (siteId: string, siteName?: string) => {
+    const site = openedSites.find(s => s.siteId === siteId);
+    if (site?.isDirty) {
+      setConfirmClose({ siteId, siteName });
+    } else {
+      closeSite(siteId);
+    }
+  };
+
+  const confirmCloseSite = () => {
+    if (confirmClose) {
+      closeSite(confirmClose.siteId);
+      setConfirmClose(null);
     }
   };
 
@@ -61,8 +86,66 @@ export default function Layout({ children }: LayoutProps) {
           ))}
         </nav>
         
-        {/* User info at bottom of sidebar */}
+        {/* User info and opened sites at bottom of sidebar */}
         <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+          {/* Opened Sites Section */}
+          {openedSites.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>
+                Opened Sites
+              </h3>
+              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                {openedSites.map(site => (
+                  <div
+                    key={site.siteId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem',
+                      borderRadius: '0.25rem',
+                      marginBottom: '0.25rem',
+                      backgroundColor: '#f9fafb',
+                      border: '1px solid #e5e7eb'
+                    }}
+                  >
+                    <Link
+                      to="/sites/$siteId/manage"
+                      params={{ siteId: site.siteId }}
+                      style={{
+                        fontSize: '0.75rem',
+                        color: '#6b7280',
+                        textDecoration: 'none',
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {site.siteName || site.siteId}
+                      {site.isDirty && <span style={{ color: '#dc2626', marginLeft: '0.25rem' }}>●</span>}
+                    </Link>
+                    <button
+                      onClick={() => handleCloseSite(site.siteId, site.siteName)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        color: '#6b7280',
+                        padding: '0.25rem',
+                        marginLeft: '0.5rem'
+                      }}
+                      title="Close site"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div style={{ marginBottom: '1rem' }}>
             <div className={styles.userName}>{user?.displayName || user?.username}</div>
             <div className={styles.userRole}>{primaryRole}</div>
@@ -78,26 +161,41 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
       
       <main className={styles.main}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.pageTitle}>
-              {getPageTitle(currentPath)}
-            </h1>
-            <p className={styles.pageDescription}>
-              {getPageDescription(currentPath)}
-            </p>
-          </div>
-          
-          <div className={styles.userMenu}>
+        {/* Only show header for non-site management pages */}
+        {!currentPath.includes('/sites/') || !currentPath.includes('/manage') ? (
+          <div className={styles.header}>
             <div>
-              <div className={styles.userName}>Welcome, {user?.displayName || user?.username}</div>
-              <div className={styles.userRole}>{user?.email}</div>
+              <h1 className={styles.pageTitle}>
+                {getPageTitle(currentPath)}
+              </h1>
+              <p className={styles.pageDescription}>
+                {getPageDescription(currentPath)}
+              </p>
+            </div>
+            
+            <div className={styles.userMenu}>
+              <div>
+                <div className={styles.userName}>Welcome, {user?.displayName || user?.username}</div>
+                <div className={styles.userRole}>{user?.email}</div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
         
         {children}
       </main>
+
+      {/* Confirmation dialog for closing sites with unsaved changes */}
+      <ConfirmDialog
+        open={!!confirmClose}
+        onOpenChange={() => setConfirmClose(null)}
+        title="Unsaved Changes"
+        description={`The site "${confirmClose?.siteName || confirmClose?.siteId}" has unsaved changes. Are you sure you want to close it? All unsaved changes will be lost.`}
+        confirmText="Close"
+        cancelText="Keep Open"
+        onConfirm={confirmCloseSite}
+        variant="destructive"
+      />
     </div>
   );
 }

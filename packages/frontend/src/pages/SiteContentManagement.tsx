@@ -43,7 +43,7 @@ export default function SiteContentManagement() {
     filterType,
     loadFiles,
     loadFileContent,
-    saveFile,
+    saveFileLocally,
     setSearchQuery,
     setFilterType,
     clearError,
@@ -302,7 +302,7 @@ export default function SiteContentManagement() {
                   filePath={selectedFile}
                   fileType={files.find(f => f.path === selectedFile)?.type || 'asset'}
                   content={fileContent || ''}
-                  onSave={saveFile}
+                  onSave={saveFileLocally}
                 />
               )}
             </>
