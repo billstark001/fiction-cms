@@ -111,13 +111,7 @@ export const resolutionOption = style({
   cursor: 'pointer',
   fontSize: '0.875rem',
   fontWeight: '500',
-  color: '#374151',
-  
-  selectors: {
-    'input[type="radio"]': {
-      marginRight: '0.5rem'
-    }
-  }
+  color: '#374151'
 });
 
 // Content editor
