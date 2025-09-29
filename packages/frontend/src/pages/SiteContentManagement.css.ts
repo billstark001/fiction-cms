@@ -221,3 +221,16 @@ export const dismissButton = style({
     },
   },
 });
+
+// File status styles
+export const fileStatusLocal = style({
+  color: '#dc2626', // Red for local changes
+});
+
+export const fileStatusRemote = style({
+  color: '#f59e0b', // Orange for remote saved
+});
+
+export const fileStatusCommitted = style({
+  color: '#10b981', // Green for committed
+});
