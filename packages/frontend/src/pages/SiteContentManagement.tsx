@@ -7,6 +7,7 @@ import { useSiteManagerStore } from '../store/siteManagerStore';
 import { apiClient } from '../api/client';
 import { ArrowLeftIcon } from '../components/icons';
 import { ConfirmDialog } from '../components/ui/AlertDialog';
+import { ConflictResolutionDialog } from '../components/ui/ConflictResolutionDialog';
 import * as contentStyles from './SiteContentManagement.css';
 import * as formStyles from '../styles/forms.css';
 import * as commonStyles from '../styles/common.css';
@@ -19,6 +20,14 @@ export default function SiteContentManagement() {
   // UI state
   const [closingFile, setClosingFile] = useState<string | null>(null);
   const [previewCollapsed, setPreviewCollapsed] = useState(true);
+  const [conflicts, setConflicts] = useState<Array<{
+    filePath: string;
+    localModified: string;
+    remoteModified: string;
+    localContent: string;
+    remoteContent?: string;
+  }>>([]);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
 
   // Validation state
   const [validationState, setValidationState] = useState<{
@@ -60,7 +69,8 @@ export default function SiteContentManagement() {
     setFilterType,
     clearError,
     getFilteredFiles,
-    pullFromRemote
+    pullFromRemote,
+    resolveConflict
   } = useStore?.() ?? useDefaultSiteContentState();
 
   useEffect(() => {
@@ -147,6 +157,53 @@ export default function SiteContentManagement() {
     const message = `Update ${dirtyFiles.length} file(s)`;
     await commitFiles(dirtyFiles, message);
   };
+
+  const handleConflictResolve = async (
+    filePath: string, 
+    resolution: 'local' | 'remote' | 'manual', 
+    manualContent?: string
+  ) => {
+    await resolveConflict(filePath, resolution, manualContent);
+    
+    // Remove resolved conflict from list
+    setConflicts(prev => prev.filter(c => c.filePath !== filePath));
+  };
+
+  const handleConflictResolveAll = async (
+    resolutions: Array<{ 
+      filePath: string; 
+      resolution: 'local' | 'remote' | 'manual'; 
+      manualContent?: string 
+    }>
+  ) => {
+    for (const resolution of resolutions) {
+      await resolveConflict(
+        resolution.filePath, 
+        resolution.resolution, 
+        resolution.manualContent
+      );
+    }
+    
+    setConflicts([]);
+    setShowConflictDialog(false);
+  };
+
+  // Check for conflicts when files change
+  useEffect(() => {
+    const conflictedFiles = files.filter(f => f.hasConflict);
+    if (conflictedFiles.length > 0) {
+      const newConflicts = conflictedFiles.map(file => ({
+        filePath: file.path,
+        localModified: file.lastModified,
+        remoteModified: new Date().toISOString(), // This would come from backend
+        localContent: file.localContent || '',
+        remoteContent: undefined // This would be fetched from backend
+      }));
+      
+      setConflicts(newConflicts);
+      setShowConflictDialog(true);
+    }
+  }, [files]);
 
   const handleValidation = async () => {
     if (!siteId) return;
@@ -541,6 +598,15 @@ export default function SiteContentManagement() {
         cancelText="Keep Open"
         onConfirm={confirmCloseFile}
         variant="destructive"
+      />
+
+      {/* Conflict Resolution Dialog */}
+      <ConflictResolutionDialog
+        open={showConflictDialog}
+        onOpenChange={setShowConflictDialog}
+        conflicts={conflicts}
+        onResolve={handleConflictResolve}
+        onResolveAll={handleConflictResolveAll}
       />
     </Layout>
   );
