@@ -304,25 +304,25 @@ export class SiteService {
 
         const sitesData = q
           ? await baseQuery
-              .where(
-                or(
-                  like(sites.name, `%${q}%`),
-                  like(sites.githubRepositoryUrl, `%${q}%`),
-                  like(sites.localPath, `%${q}%`)
-                )
-              )
-              .limit(limit)
-              .offset(offset)
-          : await baseQuery.limit(limit).offset(offset);
-
-        const totalResult = q
-          ? await db.select({ count: sites.id }).from(sites).where(
+            .where(
               or(
                 like(sites.name, `%${q}%`),
                 like(sites.githubRepositoryUrl, `%${q}%`),
                 like(sites.localPath, `%${q}%`)
               )
             )
+            .limit(limit)
+            .offset(offset)
+          : await baseQuery.limit(limit).offset(offset);
+
+        const totalResult = q
+          ? await db.select({ count: sites.id }).from(sites).where(
+            or(
+              like(sites.name, `%${q}%`),
+              like(sites.githubRepositoryUrl, `%${q}%`),
+              like(sites.localPath, `%${q}%`)
+            )
+          )
           : await db.select({ count: sites.id }).from(sites);
 
         const total = totalResult.length;
@@ -380,36 +380,34 @@ export class SiteService {
 
     return safeExecute(
       async () => {
-        const normalizedName = name.trim();
-        const normalizedGithubUrl = githubRepositoryUrl.trim();
-        const normalizedLocalPath = localPath.trim();
-        const normalizedBuildCommand = buildCommand?.trim() || undefined;
-        const normalizedBuildOutputDir = buildOutputDir?.trim() || undefined;
-        const normalizedValidateCommand = validateCommand?.trim() || undefined;
-        const normalizedDescription = description?.trim() || undefined;
-        const sanitizedEditablePaths = sanitizeStringArray(editablePaths);
-        const sanitizedSqliteFiles = sanitizeSQLiteFiles(sqliteFiles);
-        const sanitizedModelFiles = sanitizeModelFiles(modelFiles);
-        const sanitizedCustomFileTypes = sanitizeCustomFileTypes(customFileTypes);
+        const normalizedFields = {
+          name: name.trim(),
+          githubRepositoryUrl: githubRepositoryUrl.trim(),
+          localPath: localPath.trim(),
+          buildCommand: buildCommand?.trim() || undefined,
+          buildOutputDir: buildOutputDir?.trim() || undefined,
+          validateCommand: validateCommand?.trim() || undefined,
+          description: description?.trim() || undefined
+        };
+
+        const sanitizedFields = {
+          editablePaths: sanitizeStringArray(editablePaths),
+          sqliteFiles: sanitizeSQLiteFiles(sqliteFiles),
+          modelFiles: sanitizeModelFiles(modelFiles),
+          customFileTypes: sanitizeCustomFileTypes(customFileTypes),
+        };
+
 
         const siteConfig: SiteConfig = {
           id: 'temp',
-          name: normalizedName,
-          githubRepositoryUrl: normalizedGithubUrl,
+          ...normalizedFields,
+          ...sanitizedFields,
           githubPat: githubPat.trim(),
-          localPath: normalizedLocalPath,
-          buildCommand: normalizedBuildCommand,
-          buildOutputDir: normalizedBuildOutputDir,
-          validateCommand: normalizedValidateCommand,
-          editablePaths: sanitizedEditablePaths,
-          sqliteFiles: sanitizedSqliteFiles,
-          modelFiles: sanitizedModelFiles,
-          customFileTypes: sanitizedCustomFileTypes
         };
 
         validateSiteConfig(siteConfig);
 
-        const existingSite = await checkSiteNameExists(normalizedName);
+        const existingSite = await checkSiteNameExists(normalizedFields.name);
         if (existingSite) {
           throw new SiteServiceError('Site name already exists', 409);
         }
@@ -417,21 +415,17 @@ export class SiteService {
         const encryptedPat = encryptPat(githubPat.trim());
         const encryptedPatBuffer = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
 
+        const stringifiedFields = Object.entries(sanitizedFields).reduce((acc, [key, value]) => {
+          (acc as any)[key] = value?.length ? JSON.stringify(value) : null;
+          return acc;
+        }, {} as Record<keyof typeof sanitizedFields, string | null>);
+
         const newSite = await db
           .insert(sites)
           .values({
-            name: normalizedName,
-            description: normalizedDescription ?? null,
-            githubRepositoryUrl: normalizedGithubUrl,
+            ...normalizedFields,
             githubPatEncrypted: encryptedPatBuffer,
-            localPath: normalizedLocalPath,
-            buildCommand: normalizedBuildCommand ?? null,
-            buildOutputDir: normalizedBuildOutputDir ?? null,
-            validateCommand: normalizedValidateCommand ?? null,
-            editablePaths: sanitizedEditablePaths ? JSON.stringify(sanitizedEditablePaths) : null,
-            sqliteFiles: sanitizedSqliteFiles ? JSON.stringify(sanitizedSqliteFiles) : null,
-            modelFiles: sanitizedModelFiles ? JSON.stringify(sanitizedModelFiles) : null,
-            customFileTypes: sanitizedCustomFileTypes ? JSON.stringify(sanitizedCustomFileTypes) : null,
+            ...stringifiedFields,
             isActive
           })
           .returning(SITE_SELECT_FIELDS)

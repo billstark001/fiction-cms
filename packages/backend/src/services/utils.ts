@@ -11,6 +11,16 @@ export async function safeExecute<T>(operation: () => Promise<T>, context: strin
   }
 }
 
+export function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  const result = {} as Pick<T, K>;
+  for (const key of keys) {
+    if (key in (obj as any)) {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
 /**
  * 通用查找方法
  */

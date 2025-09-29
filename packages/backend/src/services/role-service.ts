@@ -104,30 +104,14 @@ export class RoleService {
       const role = await this.findRoleById(id);
       if (!role) return null;
 
-      const rolePermissionsData = await db.select({
-        permissionId: permissions.id,
-        permissionName: permissions.name,
-        permissionDisplayName: permissions.displayName,
-        permissionDescription: permissions.description,
-        permissionResource: permissions.resource,
-        permissionAction: permissions.action,
-        permissionCreatedAt: permissions.createdAt
-      })
+      const rolePermissionsData = await db.select(this.permissionFields)
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
       .where(eq(rolePermissions.roleId, id));
 
       return {
         ...role,
-        permissions: rolePermissionsData.map(p => ({
-          id: p.permissionId,
-          name: p.permissionName,
-          displayName: p.permissionDisplayName,
-          description: p.permissionDescription,
-          resource: p.permissionResource,
-          action: p.permissionAction,
-          createdAt: p.permissionCreatedAt
-        }))
+        permissions: rolePermissionsData
       };
     }, 'find role with permissions', { roleId: id });
   }
