@@ -1,5 +1,5 @@
 import { db } from '../db/index.js';
-import { roles, permissions, rolePermissions, userRoles, users } from '../db/schema.js';
+import { roles, permissions, rolePermissions, userRoles } from '../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import { loggers } from '../utils/logger.js';
 import { entityExists, findAll, findByField, safeExecute } from './utils.js';

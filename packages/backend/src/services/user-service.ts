@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { db } from '../db/index.js';
 import { users, userRoles, roles, rolePermissions, permissions } from '../db/schema.js';
-import { eq, ne, like, or, and, inArray } from 'drizzle-orm';
+import { eq, like, or, inArray } from 'drizzle-orm';
 import { loggers } from '../utils/logger.js';
 import { revokeAllUserRefreshTokens } from '../auth/tokens.js';
 import { entityExists, findByField, safeExecute } from './utils.js';

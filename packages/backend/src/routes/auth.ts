@@ -1,14 +1,10 @@
 import { Hono } from 'hono';
-import bcrypt from 'bcryptjs';
-import { db } from '../db/index.js';
-import { users, refreshTokens } from '../db/schema.js';
-import { eq, and, gt } from 'drizzle-orm';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, revokeRefreshToken, revokeAllUserRefreshTokens } from '../auth/tokens.js';
 import { UserDataWithRoles, userService } from '../services/index.js';
 import { authMiddleware } from '../auth/middleware.js';
 import { validateJson } from '../middleware/validation.js';
 import { authRateLimit } from '../middleware/rate-limiting.js';
-import { handleError, createErrorResponse, sanitizeErrorMessage } from '../utils/error-handling.js';
+import { handleError, createErrorResponse } from '../utils/error-handling.js';
 import { 
   loginSchema, 
   registerSchema, 

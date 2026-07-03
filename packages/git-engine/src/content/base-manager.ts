@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { SiteConfig, FileOperationResult } from '../types.js';
 import { commonFileOperations } from './common-operations.js';
-import { logHelpers } from '../../utils/logger.js';
+import { logHelpers } from '../logger.js';
 
 /**
  * 基础管理器类
@@ -81,7 +81,7 @@ export abstract class BaseManager {
   /**
    * 安全地执行批量文件操作
    */
-  protected async executeBatchOperation<T, R>(
+  protected async executeBatchOperation<T>(
     items: T[],
     operation: (item: T) => Promise<FileOperationResult & { path?: string }>,
     operationName: string

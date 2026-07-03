@@ -203,8 +203,10 @@ export const validators = {
   },
   
   sanitizeFilename: (filename: string): string => {
-    // Remove potentially dangerous characters
-    return filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_');
+    const dangerousCharacters = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']);
+    return Array.from(filename, (character) => {
+      return dangerousCharacters.has(character) || character.charCodeAt(0) < 32 ? '_' : character;
+    }).join('');
   }
 };
 

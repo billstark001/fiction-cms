@@ -17,9 +17,14 @@ import {
   deploymentTriggerSchema,
   paginationSchema
 } from '../schemas/index.js';
-import { contentManager, gitManager, deploymentEngine, commonFileOperations } from '../engine/index.js';
-import { ConfigValidator } from '../engine/content/config-validator.js';
-import { SiteConfig } from '../engine/types.js';
+import {
+  contentManager,
+  gitManager,
+  deploymentEngine,
+  commonFileOperations,
+  ConfigValidator,
+  type SiteConfig
+} from '@fiction-cms/git-engine';
 import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
 import { sanitizeFileUpload, bodyLimit } from '../middleware/security.js';
 
@@ -74,12 +79,20 @@ async function commitChanges(siteConfig: SiteConfig, filePaths: string[], messag
   return await gitManager.commitAndPush(siteConfig, filePaths, message, author);
 }
 
-function createResponse(message: string, data: any = {}, status = 200) {
+function createResponse(message: string, data: any = {}) {
   return {
     message,
     ...data,
     timestamp: new Date().toISOString()
   };
+}
+
+function routeParam(c: any, name: string): string {
+  const value = c.req.param(name);
+  if (!value) {
+    throw new Error(`Missing route parameter: ${name}`);
+  }
+  return value;
 }
 
 // File routes
@@ -101,8 +114,8 @@ engineRoutes.get('/sites/:siteId/files',
 engineRoutes.get('/sites/:siteId/files/:filePath',
   requireSitePermission('content.read'),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const filePath = c.req.param('filePath');
+    const siteId = routeParam(c, 'siteId');
+    const filePath = routeParam(c, 'filePath');
 
     if (!filePath) return c.json({ error: 'File path is required' }, 400);
 
@@ -121,8 +134,8 @@ engineRoutes.put('/sites/:siteId/files/:filePath',
   requireSitePermission('content.write'),
   validateJson(fileOperationSchema),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const filePath = c.req.param('filePath');
+    const siteId = routeParam(c, 'siteId');
+    const filePath = routeParam(c, 'filePath');
     const { content, commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
@@ -184,8 +197,8 @@ engineRoutes.post('/sites/:siteId/files',
 engineRoutes.delete('/sites/:siteId/files/:filePath',
   requireSitePermission('content.delete'),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const filePath = c.req.param('filePath');
+    const siteId = routeParam(c, 'siteId');
+    const filePath = routeParam(c, 'filePath');
     const user = c.get('user');
 
     if (!filePath) return c.json({ error: 'File path is required' }, 400);
@@ -211,45 +224,14 @@ engineRoutes.delete('/sites/:siteId/files/:filePath',
   }
 );
 
-// SQLite routes helper
-async function handleSQLiteOperation(
-  c: any,
-  siteId: string,
-  database: string,
-  tableName: string,
-  operation: (siteConfig: SiteConfig) => Promise<any>,
-  successMessage: string,
-  commitFiles: string[] = [],
-  user?: any,
-  commitMessage?: string
-) {
-  return withSiteConfig(c, siteId, async (siteConfig) => {
-    const result = await operation(siteConfig);
-    if (!result.success) {
-      return c.json({ error: successMessage.replace('successfully', 'failed'), details: result.error }, 500);
-    }
-
-    let commitHash = null;
-    if (commitFiles.length && user && commitMessage) {
-      const commitResult = await commitChanges(siteConfig, commitFiles, commitMessage, user);
-      commitHash = commitResult.hash || null;
-    }
-
-    return c.json(createResponse(successMessage, {
-      data: result.data,
-      commitHash
-    }));
-  });
-}
-
 // SQLite routes
 engineRoutes.get('/sites/:siteId/sqlite/:database/tables/:table',
   requireSitePermission('content.read'),
   validateQuery(sqliteQuerySchema.omit({ tableName: true })),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const database = c.req.param('database');
-    const tableName = c.req.param('table');
+    const siteId = routeParam(c, 'siteId');
+    const database = routeParam(c, 'database');
+    const tableName = routeParam(c, 'table');
     const { limit, offset } = c.get('validatedQuery');
 
     return withSiteConfig(c, siteId, async (siteConfig) => {
@@ -279,9 +261,9 @@ engineRoutes.post('/sites/:siteId/sqlite/:database/tables/:table/rows',
   requireSitePermission('content.write'),
   validateJson(sqliteCreateSchema.omit({ tableName: true })),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const database = c.req.param('database');
-    const tableName = c.req.param('table');
+    const siteId = routeParam(c, 'siteId');
+    const database = routeParam(c, 'database');
+    const tableName = routeParam(c, 'table');
     const { data, commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
@@ -320,10 +302,10 @@ engineRoutes.put('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId',
   requireSitePermission('content.write'),
   validateJson(sqliteUpdateSchema.omit({ tableName: true, rowId: true })),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const database = c.req.param('database');
-    const tableName = c.req.param('table');
-    const rowId = c.req.param('rowId');
+    const siteId = routeParam(c, 'siteId');
+    const database = routeParam(c, 'database');
+    const tableName = routeParam(c, 'table');
+    const rowId = routeParam(c, 'rowId');
     const { data, commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
@@ -362,10 +344,10 @@ engineRoutes.delete('/sites/:siteId/sqlite/:database/tables/:table/rows/:rowId',
   requireSitePermission('content.write'),
   validateJson(sqliteDeleteSchema.omit({ tableName: true, rowId: true })),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const database = c.req.param('database');
-    const tableName = c.req.param('table');
-    const rowId = c.req.param('rowId');
+    const siteId = routeParam(c, 'siteId');
+    const database = routeParam(c, 'database');
+    const tableName = routeParam(c, 'table');
+    const rowId = routeParam(c, 'rowId');
     const { commitMessage } = c.get('validatedData');
     const user = c.get('user');
 
@@ -438,7 +420,7 @@ engineRoutes.post('/sites/:siteId/assets',
   sanitizeFileUpload(['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'pdf', 'txt', 'md'], 10 * 1024 * 1024),
   requireSitePermission('content.write'),
   async (c) => {
-    const siteId = c.req.param('siteId');
+    const siteId = routeParam(c, 'siteId');
     const user = c.get('user');
 
     return withSiteConfig(c, siteId, async (siteConfig) => {
@@ -476,7 +458,7 @@ engineRoutes.post('/sites/:siteId/deploy',
   requireSitePermission('site.deploy'),
   validateJson(deploymentTriggerSchema),
   async (c) => {
-    const siteId = c.req.param('siteId');
+    const siteId = routeParam(c, 'siteId');
     const user = c.get('user');
 
     return withSiteConfig(c, siteId, async (siteConfig) => {
@@ -494,10 +476,10 @@ engineRoutes.post('/sites/:siteId/deploy',
 engineRoutes.get('/sites/:siteId/deploy/:taskId',
   requireSitePermission('site.read'),
   async (c) => {
-    const siteId = c.req.param('siteId');
-    const taskId = c.req.param('taskId');
+    const siteId = routeParam(c, 'siteId');
+    const taskId = routeParam(c, 'taskId');
 
-    return withSiteConfig(c, siteId, async (siteConfig) => {
+    return withSiteConfig(c, siteId, async (_siteConfig) => {
       const status = deploymentEngine.getTaskStatus(taskId);
 
       if (!status || status.siteId !== siteId) {
@@ -522,10 +504,10 @@ engineRoutes.get('/sites/:siteId/deploy',
   requireSitePermission('site.read'),
   validateQuery(paginationSchema.partial()),
   async (c) => {
-    const siteId = c.req.param('siteId');
+    const siteId = routeParam(c, 'siteId');
     const { page = 1, limit = 20 } = c.get('validatedQuery');
 
-    return withSiteConfig(c, siteId, async (siteConfig) => {
+    return withSiteConfig(c, siteId, async (_siteConfig) => {
       const allTasks = deploymentEngine.getActiveTasks()
         .filter(task => task.siteId === siteId)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

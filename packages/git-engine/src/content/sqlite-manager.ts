@@ -10,7 +10,6 @@ import {
 } from '../types.js';
 import { BaseManager } from './base-manager.js';
 import { commonFileOperations } from './common-operations.js';
-import { ConfigValidator } from './config-validator.js';
 
 /**
  * SQLite 数据库管理器
@@ -182,7 +181,7 @@ export class SQLiteManager extends BaseManager {
   /**
    * 生成主键值
    */
-  private generatePrimaryKeyValue(strategy: string = 'auto_increment', columnInfo?: any): any {
+  private generatePrimaryKeyValue(strategy: string = 'auto_increment'): any {
     switch (strategy) {
       case 'random_string':
         return createId();
@@ -193,8 +192,8 @@ export class SQLiteManager extends BaseManager {
         return undefined;
       case 'auto_increment':
       default:
-        // 对于自增列，返回null让数据库处理
-        return null;
+        // 对于自增列，不写入主键列，让数据库处理
+        return undefined;
     }
   }
 
@@ -228,6 +227,7 @@ export class SQLiteManager extends BaseManager {
 
         // 准备插入数据
         const insertData: Record<string, any> = { ...data };
+        let generatedPrimaryKeyColumn: string | undefined;
 
         // 应用默认值
         if (tableConfig.defaultValues) {
@@ -247,6 +247,7 @@ export class SQLiteManager extends BaseManager {
             const generatedValue = this.generatePrimaryKeyValue(tableConfig.primaryKeyStrategy);
             if (generatedValue !== undefined) {
               insertData[primaryKeyColumn.name] = generatedValue;
+              generatedPrimaryKeyColumn = primaryKeyColumn.name;
             }
           }
         }
@@ -254,7 +255,9 @@ export class SQLiteManager extends BaseManager {
         // 检查可编辑性
         const editableColumns = tableConfig.editableColumns || allColumns.map(col => col.name);
         const insertColumns = Object.keys(insertData);
-        const unauthorizedColumns = insertColumns.filter(col => !editableColumns.includes(col));
+        const unauthorizedColumns = insertColumns.filter(
+          col => col !== generatedPrimaryKeyColumn && !editableColumns.includes(col)
+        );
         
         if (unauthorizedColumns.length > 0) {
           throw new Error(`Editing columns not allowed: ${unauthorizedColumns.join(', ')}`);

@@ -1,4 +1,4 @@
-import { db, sqlite as sqliteDb } from '../db/index.js';
+import { sqlite as sqliteDb } from '../db/index.js';
 import { seedDatabase } from '../db/seed.js';
 import { createTables } from './create-tables.js';
 import { loggers } from './logger.js';

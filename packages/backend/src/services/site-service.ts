@@ -8,9 +8,9 @@ import {
   SQLiteFileConfig,
   SQLiteTableConfig,
   ModelFileConfig,
-  CustomFileTypeConfig
-} from '../engine/types.js';
-import { ConfigValidator } from '../engine/content/config-validator.js';
+  CustomFileTypeConfig,
+  ConfigValidator
+} from '@fiction-cms/git-engine';
 import { safeExecute } from './utils.js';
 
 export class SiteServiceError extends Error {

@@ -1,7 +1,7 @@
 import { Context, Next } from 'hono';
 import { verifyToken, TokenPayload } from './tokens.js';
 import { db } from '../db/index.js';
-import { users, userRoles, roles, rolePermissions, permissions, userSites } from '../db/schema.js';
+import { userRoles, roles, rolePermissions, permissions, userSites } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { UserDataWithRoles, userService } from '../services/index.js';
 

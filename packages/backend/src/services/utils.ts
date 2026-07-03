@@ -1,6 +1,6 @@
-import { and, eq, ne } from "drizzle-orm";
-import { db } from "../db";
-import { loggers } from "../utils/logger";
+import { and, eq, ne } from 'drizzle-orm';
+import { db } from '../db/index.js';
+import { loggers } from '../utils/logger.js';
 
 export async function safeExecute<T>(operation: () => Promise<T>, context: string, params?: any): Promise<T> {
   try {

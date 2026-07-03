@@ -1,9 +1,9 @@
-import simpleGit, { SimpleGit } from 'simple-git';
+import { simpleGit, type SimpleGit } from 'simple-git';
 import path from 'path';
 import fs from 'fs/promises';
 import { spawn } from 'child_process';
 import { SiteConfig, GitOperationResult, ValidationResult } from './types.js';
-import { loggers, logHelpers } from '../utils/logger.js';
+import { loggers, logHelpers } from './logger.js';
 
 /**
  * Git交互管理器
@@ -30,7 +30,7 @@ export class GitManager {
    * 初始化仓库：如果本地不存在则克隆，存在则拉取最新代码
    */
   async initializeRepository(siteConfig: SiteConfig): Promise<GitOperationResult> {
-    const { githubRepositoryUrl, localPath, githubPat, id } = siteConfig;
+    const { githubRepositoryUrl, localPath, id } = siteConfig;
     const startTime = Date.now();
     
     try {

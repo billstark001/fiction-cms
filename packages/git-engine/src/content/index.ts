@@ -53,7 +53,7 @@ export class ContentManager {
             lastModified: stats.mtime,
             size: stats.size
           });
-        } catch (error) {
+        } catch {
           // SQLite文件不存在，跳过
         }
       }

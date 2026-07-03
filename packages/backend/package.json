@@ -1,9 +1,12 @@
 {
-  "name": "backend",
+  "name": "@fiction-cms/backend",
   "version": "1.0.0",
   "description": "Hono backend for fiction CMS",
   "type": "module",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -16,6 +19,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@fiction-cms/git-engine": "workspace:*",
     "@hono/node-server": "^2.0.8",
     "@paralleldrive/cuid2": "^3.3.0",
     "@types/bcryptjs": "^3.0.0",

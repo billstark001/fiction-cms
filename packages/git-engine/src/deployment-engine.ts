@@ -346,7 +346,7 @@ export class DeploymentEngine {
         buildCommand,
         outputDir: buildOutputDir
       };
-    } catch (error) {
+    } catch {
       return {
         hasPackageJson: false,
         hasNodeModules: false,

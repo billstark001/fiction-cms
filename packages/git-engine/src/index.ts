@@ -24,3 +24,6 @@ export { TextFileManager } from './content/text-manager.js';
 export { SQLiteManager } from './content/sqlite-manager.js';
 export { AssetManager } from './content/asset-manager.js';
 export { CommonFileOperations } from './content/common-operations.js';
+
+// 导出配置验证工具
+export { ConfigValidator } from './content/config-validator.js';

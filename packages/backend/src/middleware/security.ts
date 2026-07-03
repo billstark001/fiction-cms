@@ -116,7 +116,9 @@ export async function csp(c: Context, next: Next) {
 /**
  * CORS middleware with security considerations
  */
-export function cors(allowedOrigins: string[] = ['http://localhost:3000']) {
+type Middleware = (c: Context, next: Next) => Promise<Response | void>;
+
+export function cors(allowedOrigins: string[] = ['http://localhost:3000']): Middleware {
   return async (c: Context, next: Next) => {
     const origin = c.req.header('origin');
     

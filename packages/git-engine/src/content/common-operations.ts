@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { glob } from 'glob';
-import { SiteConfig, FileOperationResult, ContentFile } from '../types.js';
+import { SiteConfig, ContentFile } from '../types.js';
 
 /**
  * 通用文件操作功能
@@ -159,7 +159,7 @@ export class CommonFileOperations {
           });
         }
       }
-    } catch (error) {
+    } catch {
       // 目录不存在或无权限访问，返回空数组
     }
 
@@ -220,7 +220,10 @@ export class CommonFileOperations {
     try {
       return await fs.stat(filePath);
     } catch (error) {
-      throw new Error(`Unable to get file statistics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Unable to get file statistics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
+      );
     }
   }
 }

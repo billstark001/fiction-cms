@@ -1,8 +1,11 @@
 {
-  "name": "frontend",
+  "name": "@fiction-cms/frontend",
   "version": "1.0.0",
   "description": "Vite React frontend for fiction CMS",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

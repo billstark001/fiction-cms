@@ -1,13 +1,18 @@
 {
-  "name": "fiction-cms",
+  "name": "@fiction-cms/workspace",
   "version": "1.0.0",
-  "description": "A modern fiction CMS with Vite+React frontend and Hono backend",
+  "description": "A CMS designed for git repositories with Vite+React frontend and Hono backend",
   "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
-    "build": "pnpm --filter backend build && pnpm --filter frontend build",
-    "lint": "pnpm --filter \"*\" lint",
-    "type-check": "pnpm --filter \"*\" type-check"
+    "dev": "concurrently \"pnpm --filter @fiction-cms/backend dev\" \"pnpm --filter @fiction-cms/frontend dev\"",
+    "build": "pnpm --filter @fiction-cms/git-engine build && pnpm --filter @fiction-cms/backend build && pnpm --filter @fiction-cms/frontend build",
+    "lint": "pnpm --filter \"@fiction-cms/*\" lint",
+    "test": "pnpm --filter \"@fiction-cms/*\" test",
+    "type-check": "pnpm --filter \"@fiction-cms/*\" type-check"
   },
   "keywords": [
     "fiction",
@@ -20,6 +25,7 @@
   "author": "Bill Toshiaki Stark",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/gh-pages": "^6.1.0",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",

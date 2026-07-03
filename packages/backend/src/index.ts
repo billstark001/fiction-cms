@@ -9,7 +9,7 @@ import { requestLoggingMiddleware, performanceMiddleware, errorLoggingMiddleware
 import { apiRateLimit } from './middleware/rate-limiting.js'
 import { handleError } from './utils/error-handling.js'
 import { config, isDevelopment } from './config/environment.js'
-import { loggers, logHelpers } from './utils/logger.js'
+import { loggers } from './utils/logger.js'
 import dotenv from 'dotenv'
 
 // Load environment variables
