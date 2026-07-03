@@ -1,7 +1,7 @@
 {
   "name": "@fiction-cms/workspace",
-  "version": "1.0.0",
-  "description": "A CMS designed for git repositories with Vite+React frontend and Hono backend",
+  "version": "0.1.0",
+  "description": "Composable CMS packages for text resources, assets, and rule-driven data collections.",
   "type": "module",
   "private": true,
   "engines": {
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "concurrently \"pnpm --filter @fiction-cms/backend dev\" \"pnpm --filter @fiction-cms/frontend dev\"",
-    "build": "pnpm --filter @fiction-cms/git-engine build && pnpm --filter @fiction-cms/backend build && pnpm --filter @fiction-cms/frontend build",
+    "build": "pnpm --filter @fiction-cms/common build && pnpm --filter @fiction-cms/psql build && pnpm --filter @fiction-cms/s3 build && pnpm --filter @fiction-cms/data-collection build && pnpm --filter @fiction-cms/git-engine build && pnpm --filter @fiction-cms/backend build && pnpm --filter @fiction-cms/frontend build",
     "lint": "pnpm --filter \"@fiction-cms/*\" lint",
     "test": "pnpm --filter \"@fiction-cms/*\" test",
     "type-check": "pnpm --filter \"@fiction-cms/*\" type-check"

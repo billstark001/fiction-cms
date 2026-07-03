@@ -1,1 +1,0 @@
-ALTER TABLE `sites` ADD `description` text;

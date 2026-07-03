@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import crypto from 'crypto';
+import { capabilitiesFromBackendConfig, resourceBackendConfigSchema, type ResourceBackendConfig } from '@fiction-cms/common';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -36,6 +37,36 @@ const envSchema = z.object({
   
   // GitHub
   GITHUB_DEFAULT_BRANCH: z.string().default('main'),
+
+  // Resource backends
+  CMS_ENABLE_PSQL: z.string().default('true'),
+  CMS_ENABLE_S3: z.string().default('false'),
+  CMS_ENABLE_GIT: z.string().default('true'),
+
+  // S3/R2
+  S3_ENDPOINT: z.string().optional(),
+  S3_REGION: z.string().default('auto'),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_BUCKET: z.string().optional(),
+  S3_PUBLIC_BASE_URL: z.string().optional(),
+
+  // OIDC
+  OIDC_ISSUER: z.string().optional(),
+  OIDC_CLIENT_ID: z.string().optional(),
+  OIDC_CLIENT_SECRET: z.string().optional(),
+  OIDC_REDIRECT_URI: z.string().optional(),
+  OIDC_SCOPES: z.string().default('openid email profile'),
+
+  // Generic OAuth2
+  OAUTH_AUTHORIZATION_ENDPOINT: z.string().optional(),
+  OAUTH_TOKEN_ENDPOINT: z.string().optional(),
+  OAUTH_USERINFO_ENDPOINT: z.string().optional(),
+  OAUTH_CLIENT_ID: z.string().optional(),
+  OAUTH_CLIENT_SECRET: z.string().optional(),
+  OAUTH_REDIRECT_URI: z.string().optional(),
+  OAUTH_SCOPES: z.string().default('email profile'),
+  OAUTH_EMAIL_FIELD: z.string().default('email'),
   
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
@@ -63,7 +94,13 @@ export function validateEnvironment() {
       validateProductionSettings(env);
     }
     
-    return env;
+    return {
+      ...env,
+      oidc: readOidcConfig(env),
+      oauth: readOauthConfig(env),
+      s3: readS3Config(env),
+      resourceBackends: readResourceBackends(env),
+    };
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Environment validation failed:');
@@ -74,6 +111,63 @@ export function validateEnvironment() {
     }
     throw error;
   }
+}
+
+type RawEnv = z.infer<typeof envSchema>;
+
+function truthy(value: string | undefined) {
+  return value === 'true' || value === '1' || value === 'yes';
+}
+
+function readResourceBackends(env: RawEnv): ResourceBackendConfig[] {
+  return [
+    truthy(env.CMS_ENABLE_PSQL)
+      ? resourceBackendConfigSchema.parse({ driver: 'psql', texts: true, dataCollections: true, assets: false })
+      : null,
+    truthy(env.CMS_ENABLE_S3)
+      ? resourceBackendConfigSchema.parse({ driver: 's3', assets: true, texts: true, dataCollections: false })
+      : null,
+    truthy(env.CMS_ENABLE_GIT)
+      ? resourceBackendConfigSchema.parse({ driver: 'git', assets: true, texts: true, dataCollections: true })
+      : null,
+  ].filter((item): item is ResourceBackendConfig => Boolean(item));
+}
+
+function readS3Config(env: RawEnv) {
+  if (!env.S3_ENDPOINT || !env.S3_ACCESS_KEY_ID || !env.S3_SECRET_ACCESS_KEY || !env.S3_BUCKET) return undefined;
+  return {
+    endpoint: env.S3_ENDPOINT,
+    region: env.S3_REGION,
+    accessKeyId: env.S3_ACCESS_KEY_ID,
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+    bucket: env.S3_BUCKET,
+    publicBaseUrl: env.S3_PUBLIC_BASE_URL,
+  };
+}
+
+function readOidcConfig(env: RawEnv) {
+  if (!env.OIDC_ISSUER || !env.OIDC_CLIENT_ID) return undefined;
+  return {
+    issuer: env.OIDC_ISSUER,
+    clientId: env.OIDC_CLIENT_ID,
+    clientSecret: env.OIDC_CLIENT_SECRET,
+    redirectUri: env.OIDC_REDIRECT_URI,
+    scopes: env.OIDC_SCOPES,
+  };
+}
+
+function readOauthConfig(env: RawEnv) {
+  if (!env.OAUTH_AUTHORIZATION_ENDPOINT || !env.OAUTH_TOKEN_ENDPOINT || !env.OAUTH_USERINFO_ENDPOINT || !env.OAUTH_CLIENT_ID) return undefined;
+  return {
+    authorizationEndpoint: env.OAUTH_AUTHORIZATION_ENDPOINT,
+    tokenEndpoint: env.OAUTH_TOKEN_ENDPOINT,
+    userInfoEndpoint: env.OAUTH_USERINFO_ENDPOINT,
+    clientId: env.OAUTH_CLIENT_ID,
+    clientSecret: env.OAUTH_CLIENT_SECRET,
+    redirectUri: env.OAUTH_REDIRECT_URI,
+    scopes: env.OAUTH_SCOPES,
+    emailField: env.OAUTH_EMAIL_FIELD,
+  };
 }
 
 /**
@@ -111,6 +205,7 @@ function generateSecureKey(length: number): string {
  * Get validated environment config
  */
 export const config = validateEnvironment();
+export const resourceCapabilities = capabilitiesFromBackendConfig(config.resourceBackends);
 
 /**
  * Helper to check if we're in development mode

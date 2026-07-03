@@ -11,8 +11,17 @@ import {
   refreshTokenSchema, 
   changePasswordSchema 
 } from '../schemas/index.js';
+import { authProviderSummary, completeExternalAuth, startExternalAuth } from '../auth/external/oauth.js';
+import { config } from '../config/environment.js';
 
 const auth = new Hono();
+
+auth.get('/providers', (c) => c.json({ providers: authProviderSummary(config) }));
+
+auth.get('/oidc/start', (c) => startExternalAuth(c, 'oidc', config));
+auth.get('/oidc/callback', (c) => completeExternalAuth(c, 'oidc', config));
+auth.get('/oauth/start', (c) => startExternalAuth(c, 'oauth', config));
+auth.get('/oauth/callback', (c) => completeExternalAuth(c, 'oauth', config));
 
 /**
  * POST /auth/login - User login

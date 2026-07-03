@@ -1,6 +1,6 @@
 {
   "name": "@fiction-cms/frontend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Vite React frontend for fiction CMS",
   "type": "module",
   "engines": {

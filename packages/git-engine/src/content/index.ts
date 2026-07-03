@@ -185,8 +185,9 @@ export class ContentManager {
 
       for (const file of targetFiles) {
         const readResult = await this.text.readTextFile(siteConfig, file.path);
-        if (readResult.success && readResult.data?.content) {
-          const content = readResult.data.content as string;
+        const readData = readResult.data as { content?: unknown } | undefined;
+        if (readResult.success && typeof readData?.content === 'string') {
+          const content = readData.content;
           const lines = content.split('\n');
           const matches = [];
 

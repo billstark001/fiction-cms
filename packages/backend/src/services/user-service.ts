@@ -1,10 +1,11 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { db } from '../db/index.js';
 import { users, userRoles, roles, rolePermissions, permissions } from '../db/schema.js';
 import { eq, like, or, inArray } from 'drizzle-orm';
 import { loggers } from '../utils/logger.js';
 import { revokeAllUserRefreshTokens } from '../auth/tokens.js';
-import { entityExists, findByField, safeExecute } from './utils.js';
+import { entityExists, findByField, firstRow, safeExecute } from './utils.js';
 import { roleService } from './role-service.js';
 
 export type UserMetadata = {
@@ -134,18 +135,25 @@ export class UserService {
         const byUsername = await db.select(this.userFieldsWithPassword)
           .from(users)
           .where(eq(users.username, usernameOrEmail))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         if (byUsername) return byUsername;
 
         return await db.select(this.userFieldsWithPassword)
           .from(users)
           .where(eq(users.email, usernameOrEmail))
-          .get() || null;
+          .limit(1)
+          .then(firstRow) || null;
       },
       'find user by credentials',
       { credential: usernameOrEmail }
     );
+  }
+
+  async findByEmail(email: string): Promise<UserData | null> {
+    if (!email) return null;
+    return findByField(users, this.userFields, 'email', email.toLowerCase(), 'user');
   }
 
   async findByIdWithRoles(id: string): Promise<UserDataWithRoles | null> {
@@ -235,7 +243,9 @@ export class UserService {
             isActive
           })
           .returning(this.userFields)
-          .get();
+          .then(firstRow);
+
+        if (!newUser) throw new Error('User creation failed');
 
         if (roleIds.length > 0) {
           await this.assignRolesToUser(newUser.id, roleIds);
@@ -246,6 +256,50 @@ export class UserService {
       },
       'create user',
       { username, email }
+    );
+  }
+
+  async createExternalUser(input: { email: string; displayName?: string | null; roleName?: string }): Promise<UserData> {
+    return safeExecute(
+      async () => {
+        const email = input.email.trim().toLowerCase();
+        const baseUsername = email.split('@')[0]?.replace(/[^a-zA-Z0-9_-]/g, '') || 'external-user';
+        let username = baseUsername;
+        let suffix = 1;
+        while (await this.isUsernameExists(username)) {
+          suffix += 1;
+          username = `${baseUsername}-${suffix}`;
+        }
+
+        if (await this.isEmailExists(email)) {
+          throw new Error('Email already exists');
+        }
+
+        const newUser = await db
+          .insert(users)
+          .values({
+            username,
+            email,
+            passwordHash: `external:${crypto.randomUUID()}`,
+            displayName: input.displayName || null,
+            isActive: true,
+          })
+          .returning(this.userFields)
+          .then(firstRow);
+
+        if (!newUser) throw new Error('External user creation failed');
+
+        const roleName = input.roleName ?? 'editor';
+        const role = await roleService.findRoleByName(roleName);
+        if (role) {
+          await this.assignRolesToUser(newUser.id, [role.id]);
+        }
+
+        loggers.database.info({ userId: newUser.id, email, roleName }, 'External user created successfully');
+        return newUser;
+      },
+      'create external user',
+      { email: input.email },
     );
   }
 
@@ -274,7 +328,9 @@ export class UserService {
           .set(updateFields)
           .where(eq(users.id, id))
           .returning(this.userFields)
-          .get();
+          .then(firstRow);
+
+        if (!updatedUser) throw new Error('User update failed');
 
         if (roleIds !== undefined) {
           await this.updateUserRoles(id, roleIds);
@@ -315,7 +371,8 @@ export class UserService {
         const user = await db.select({ passwordHash: users.passwordHash })
           .from(users)
           .where(eq(users.id, userId))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         if (!user) throw new Error('User not found');
 
@@ -354,7 +411,8 @@ export class UserService {
         const user = await db.select({ passwordHash: users.passwordHash })
           .from(users)
           .where(eq(users.id, userId))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         return user ? await bcrypt.compare(password, user.passwordHash) : false;
       },

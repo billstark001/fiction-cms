@@ -25,6 +25,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@fiction-cms/common": "workspace:*",
     "@paralleldrive/cuid2": "^3.3.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",

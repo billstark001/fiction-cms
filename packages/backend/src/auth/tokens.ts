@@ -2,8 +2,9 @@ import { V4 } from 'paseto';
 import * as crypto from 'crypto';
 import { db } from '../db/index.js';
 import { refreshTokens } from '../db/schema.js';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, lt } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { firstRow } from '../services/utils.js';
 
 // Generate or load secret key from environment (PASETO v4 requires 32 bytes)
 const SECRET_KEY_STR = process.env.PASETO_SECRET_KEY || 'your-32-character-secret-key-here12345';
@@ -124,7 +125,8 @@ export async function verifyRefreshToken(token: string): Promise<TokenPayload> {
         gt(refreshTokens.expiresAt, new Date())
       )
     )
-    .get();
+    .limit(1)
+    .then(firstRow);
 
   if (!dbToken) {
     throw new Error('Refresh token is invalid or revoked');
@@ -160,13 +162,13 @@ export async function cleanupExpiredTokens(): Promise<void> {
       and(
         eq(refreshTokens.isRevoked, true),
         // Delete revoked tokens older than 30 days
-        gt(refreshTokens.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+        lt(refreshTokens.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
       )
     );
 
   await db.delete(refreshTokens)
     .where(
       // Delete expired tokens
-      gt(refreshTokens.expiresAt, new Date())
+      lt(refreshTokens.expiresAt, new Date())
     );
 }

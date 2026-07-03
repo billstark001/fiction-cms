@@ -7,6 +7,7 @@ import { engineRoutes } from './engine.js';
 import { authMiddleware, requirePermission } from '../auth/middleware.js';
 import { db } from '../db/index.js';
 import { permissions } from '../db/schema.js';
+import { config, resourceCapabilities } from '../config/environment.js';
 
 const api = new Hono();
 
@@ -26,10 +27,12 @@ api.get('/system/info', authMiddleware, requirePermission('system.read'), async 
   return c.json({
     system: {
       name: 'Fiction CMS Backend',
-      version: '1.0.0',
+      version: '0.1.0',
       timestamp: new Date().toISOString(),
       node_version: process.version,
-      uptime: process.uptime()
+      uptime: process.uptime(),
+      resourceBackends: config.resourceBackends,
+      resourceCapabilities,
     },
     user: {
       id: user.id,
@@ -37,6 +40,13 @@ api.get('/system/info', authMiddleware, requirePermission('system.read'), async 
       roles: user.roles,
       permissions: user.permissions.length
     }
+  });
+});
+
+api.get('/system/capabilities', authMiddleware, requirePermission('system.read'), (c) => {
+  return c.json({
+    resourceBackends: config.resourceBackends,
+    capabilities: resourceCapabilities,
   });
 });
 

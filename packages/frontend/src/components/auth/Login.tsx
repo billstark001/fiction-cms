@@ -3,6 +3,7 @@ import { useRouter, useSearch } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { useLogin } from '../../hooks/useAuth';
+import { apiClient, type AuthProviders } from '../../api/client';
 import * as styles from './Login.css';
 
 interface LoginFormData {
@@ -12,6 +13,9 @@ interface LoginFormData {
 
 interface LoginSearchParams {
   redirect?: string;
+  external?: string;
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export default function Login() {
@@ -20,8 +24,9 @@ export default function Login() {
   const redirectTo = search.redirect || '/dashboard';
   
   const { isAuthenticated, isLoading, error } = useAuthStore();
-  const { clearError } = useAuthStore();
+  const { acceptExternalTokens, clearError } = useAuthStore();
   const loginMutation = useLogin();
+  const [providers, setProviders] = useState<AuthProviders>({ password: true, oidc: false, oauth: false });
   
   const {
     register,
@@ -45,6 +50,20 @@ export default function Login() {
       router.navigate({ to: redirectTo });
     }
   }, [isAuthenticated, router, redirectTo]);
+
+  useEffect(() => {
+    apiClient.getAuthProviders().then(setProviders).catch(() => {
+      setProviders({ password: true, oidc: false, oauth: false });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (search.external === 'success' && search.accessToken && search.refreshToken) {
+      acceptExternalTokens({ accessToken: search.accessToken, refreshToken: search.refreshToken }).then(() => {
+        router.navigate({ to: redirectTo });
+      });
+    }
+  }, [acceptExternalTokens, redirectTo, router, search.accessToken, search.external, search.refreshToken]);
 
   // Clear error when form changes
   useEffect(() => {
@@ -152,6 +171,21 @@ export default function Login() {
             )}
           </button>
         </form>
+
+        {(providers.oidc || providers.oauth) && (
+          <div className={styles.loginForm}>
+            {providers.oidc && (
+              <a className={styles.primaryButton} href={apiClient.getExternalAuthStartUrl('oidc')}>
+                Sign in with OIDC
+              </a>
+            )}
+            {providers.oauth && (
+              <a className={styles.primaryButton} href={apiClient.getExternalAuthStartUrl('oauth')}>
+                Sign in with OAuth
+              </a>
+            )}
+          </div>
+        )}
 
         <div className={styles.credentialsInfo}>
           <strong>Default Admin Credentials:</strong><br />

@@ -55,6 +55,12 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface AuthProviders {
+  password: boolean;
+  oidc: boolean;
+  oauth: boolean;
+}
+
 export interface Site {
   id: string;
   name: string;
@@ -353,6 +359,15 @@ class ApiClient {
     this.setRefreshToken(response.tokens.refreshToken);
 
     return response;
+  }
+
+  async getAuthProviders(): Promise<AuthProviders> {
+    const response = await this.request<{ providers: AuthProviders }>('/auth/providers');
+    return response.providers;
+  }
+
+  getExternalAuthStartUrl(provider: 'oidc' | 'oauth'): string {
+    return `${this.baseURL}/auth/${provider}/start`;
   }
 
   async logout(): Promise<void> {

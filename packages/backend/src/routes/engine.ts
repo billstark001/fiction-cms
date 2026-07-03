@@ -1,9 +1,6 @@
 import { Hono } from 'hono';
 import fs from 'fs/promises';
 import path from 'path';
-import { db } from '../db/index.js';
-import { sites } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
 import { authMiddleware, requireSitePermission } from '../auth/middleware.js';
 import { validateJson, validateQuery, validateParams } from '../middleware/validation.js';
 import {
@@ -27,6 +24,7 @@ import {
 } from '@fiction-cms/git-engine';
 import { deployRateLimit, uploadRateLimit } from '../middleware/rate-limiting.js';
 import { sanitizeFileUpload, bodyLimit } from '../middleware/security.js';
+import { siteService } from '../services/index.js';
 
 const engineRoutes = new Hono();
 
@@ -34,24 +32,14 @@ engineRoutes.use('*', authMiddleware);
 
 // Helper functions
 async function getSiteConfig(siteId: string): Promise<Readonly<SiteConfig> | null> {
-  const site = await db.select().from(sites).where(eq(sites.id, siteId)).get();
-  if (!site) {
+  const result = await siteService.getSiteConfig(siteId).catch(() => null);
+  if (!result) {
     return null;
   }
 
   const config: SiteConfig = {
-    id: site.id,
-    name: site.name,
-    githubRepositoryUrl: site.githubRepositoryUrl,
-    githubPat: (site.githubPatEncrypted as Buffer).toString('utf8'),
-    localPath: commonFileOperations.expand(site.localPath),
-    buildCommand: site.buildCommand || undefined,
-    buildOutputDir: site.buildOutputDir || undefined,
-    validateCommand: site.validateCommand || undefined,
-    editablePaths: site.editablePaths ? JSON.parse(site.editablePaths) : undefined,
-    sqliteFiles: site.sqliteFiles ? JSON.parse(site.sqliteFiles) : undefined,
-    modelFiles: site.modelFiles ? JSON.parse(site.modelFiles) : undefined,
-    customFileTypes: site.customFileTypes ? JSON.parse(site.customFileTypes) : undefined,
+    ...result.siteConfig,
+    localPath: commonFileOperations.expand(result.siteConfig.localPath),
   };
 
   return config;

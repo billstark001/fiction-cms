@@ -14,6 +14,7 @@ export interface AuthState {
   
   // Actions
   login: (credentials: LoginRequest) => Promise<boolean>;
+  acceptExternalTokens: (tokens: { accessToken: string; refreshToken: string }) => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<void>;
   clearError: () => void;
@@ -48,6 +49,29 @@ export const useAuthStore = create<AuthState>()(
             error: error instanceof Error ? error.message : 'Login failed'
           });
           return false;
+        }
+      },
+
+      acceptExternalTokens: async (tokens: { accessToken: string; refreshToken: string }): Promise<void> => {
+        set({ isLoading: true, error: null });
+        try {
+          apiClient.setAccessToken(tokens.accessToken);
+          apiClient.setRefreshToken(tokens.refreshToken);
+          const user = await apiClient.getCurrentUser();
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error) {
+          apiClient.clearTokens();
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'External login failed',
+          });
         }
       },
 
@@ -136,6 +160,6 @@ export const useAuth = () => {
 
 // Hook for authentication actions
 export const useAuthActions = () => {
-  const { login, logout, getCurrentUser, clearError, checkAuth } = useAuthStore();
-  return { login, logout, getCurrentUser, clearError, checkAuth };
+  const { login, acceptExternalTokens, logout, getCurrentUser, clearError, checkAuth } = useAuthStore();
+  return { login, acceptExternalTokens, logout, getCurrentUser, clearError, checkAuth };
 };

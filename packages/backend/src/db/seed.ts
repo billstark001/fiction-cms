@@ -3,6 +3,7 @@ import { roles, permissions, rolePermissions, users, userRoles, refreshTokens, u
 import { eq } from 'drizzle-orm';
 import { loggers, logHelpers } from '../utils/logger.js';
 import { userService, roleService } from '../services/index.js';
+import { firstRow } from '../services/utils.js';
 
 const defaultRoles = [
   {
@@ -93,8 +94,7 @@ export async function seedDatabase() {
       try {
         await db.insert(permissions)
           .values(permission)
-          .onConflictDoNothing()
-          .run();
+          .onConflictDoNothing();
         insertedPermissions++;
       } catch (error) {
         loggers.database.warn({ permission: permission.name, error }, `Failed to insert permission ${permission.name}`);
@@ -109,8 +109,7 @@ export async function seedDatabase() {
       try {
         await db.insert(roles)
           .values(role)
-          .onConflictDoNothing()
-          .run();
+          .onConflictDoNothing();
         insertedRoles++;
       } catch (error) {
         loggers.database.warn({ role: role.name, error }, `Failed to insert role ${role.name}`);
@@ -122,14 +121,14 @@ export async function seedDatabase() {
     loggers.database.info('Assigning permissions to roles');
     let assignedPermissions = 0;
     for (const [roleName, permissionNames] of Object.entries(rolePermissionMappings)) {
-      const role = await db.select().from(roles).where(eq(roles.name, roleName)).get();
+      const role = await db.select().from(roles).where(eq(roles.name, roleName)).limit(1).then(firstRow);
       if (!role) {
         loggers.database.warn(`Role not found: ${roleName}`);
         continue;
       }
 
       for (const permissionName of permissionNames) {
-        const permission = await db.select().from(permissions).where(eq(permissions.name, permissionName)).get();
+        const permission = await db.select().from(permissions).where(eq(permissions.name, permissionName)).limit(1).then(firstRow);
         if (!permission) {
           loggers.database.warn(`Permission not found: ${permissionName}`);
           continue;
@@ -141,8 +140,7 @@ export async function seedDatabase() {
               roleId: role.id,
               permissionId: permission.id
             })
-            .onConflictDoNothing()
-            .run();
+            .onConflictDoNothing();
           assignedPermissions++;
         } catch (error) {
           loggers.database.warn({ role: roleName, permission: permissionName, error }, `Failed to assign permission ${permissionName} to role ${roleName}`);

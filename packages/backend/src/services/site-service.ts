@@ -11,7 +11,7 @@ import {
   CustomFileTypeConfig,
   ConfigValidator
 } from '@fiction-cms/git-engine';
-import { safeExecute } from './utils.js';
+import { firstRow, safeExecute } from './utils.js';
 
 export class SiteServiceError extends Error {
   constructor(
@@ -263,9 +263,9 @@ const encryptPat = (pat: string): { encryptedData: string; iv: string } => {
   };
 };
 
-const decryptPat = (encryptedPat: Buffer): string => {
+const decryptPat = (encryptedPat: Buffer | string): string => {
   try {
-    const data = JSON.parse(encryptedPat.toString('utf8'));
+    const data = JSON.parse(typeof encryptedPat === 'string' ? encryptedPat : encryptedPat.toString('utf8'));
     const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, Buffer.from(data.iv, 'hex'));
 
     let decrypted = decipher.update(data.encryptedData, 'hex', 'utf8');
@@ -290,7 +290,7 @@ const checkSiteNameExists = async (name: string, excludeId?: string) => {
     ? and(eq(sites.name, name), ne(sites.id, excludeId))
     : eq(sites.name, name);
 
-  return await db.select({ id: sites.id }).from(sites).where(whereClause).get();
+  return await db.select({ id: sites.id }).from(sites).where(whereClause).limit(1).then(firstRow);
 };
 
 export class SiteService {
@@ -349,7 +349,8 @@ export class SiteService {
           .select(SITE_SELECT_FIELDS)
           .from(sites)
           .where(eq(sites.id, id))
-          .get(),
+          .limit(1)
+          .then(firstRow),
       'get site by id',
       { id }
     );
@@ -413,8 +414,6 @@ export class SiteService {
         }
 
         const encryptedPat = encryptPat(githubPat.trim());
-        const encryptedPatBuffer = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
-
         const stringifiedFields = Object.entries(sanitizedFields).reduce((acc, [key, value]) => {
           (acc as any)[key] = value?.length ? JSON.stringify(value) : null;
           return acc;
@@ -424,18 +423,21 @@ export class SiteService {
           .insert(sites)
           .values({
             ...normalizedFields,
-            githubPatEncrypted: encryptedPatBuffer,
+            githubPatEncrypted: JSON.stringify(encryptedPat),
             ...stringifiedFields,
             isActive
           })
           .returning(SITE_SELECT_FIELDS)
-          .get();
+          .then(firstRow);
+
+        if (!newSite) throw new SiteServiceError('Site creation failed', 500);
 
         const adminRole = await db
           .select({ id: roles.id })
           .from(roles)
           .where(eq(roles.name, 'admin'))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         if (adminRole) {
           await db.insert(userSites).values({
@@ -459,7 +461,8 @@ export class SiteService {
           .select({ id: sites.id })
           .from(sites)
           .where(eq(sites.id, id))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         if (!existingSite) {
           throw new SiteServiceError('Site not found', 404);
@@ -526,7 +529,7 @@ export class SiteService {
 
         if (githubPat !== undefined) {
           const encryptedPat = encryptPat(githubPat.trim());
-          updateData.githubPatEncrypted = Buffer.from(JSON.stringify(encryptedPat), 'utf8');
+          updateData.githubPatEncrypted = JSON.stringify(encryptedPat);
         }
 
         if (editablePaths !== undefined) {
@@ -562,7 +565,9 @@ export class SiteService {
           .set(updateData)
           .where(eq(sites.id, id))
           .returning(SITE_SELECT_FIELDS)
-          .get();
+          .then(firstRow);
+
+        if (!updatedSite) throw new SiteServiceError('Site update failed', 500);
 
         return transformSiteRow(updatedSite);
       },
@@ -578,7 +583,8 @@ export class SiteService {
           .select({ id: sites.id })
           .from(sites)
           .where(eq(sites.id, id))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         if (!existingSite) {
           throw new SiteServiceError('Site not found', 404);
@@ -599,7 +605,8 @@ export class SiteService {
           .select()
           .from(sites)
           .where(eq(sites.id, id))
-          .get();
+          .limit(1)
+          .then(firstRow);
 
         if (!site) {
           throw new SiteServiceError('Site not found', 404);

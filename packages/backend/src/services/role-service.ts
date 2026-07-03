@@ -2,7 +2,7 @@ import { db } from '../db/index.js';
 import { roles, permissions, rolePermissions, userRoles } from '../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import { loggers } from '../utils/logger.js';
-import { entityExists, findAll, findByField, safeExecute } from './utils.js';
+import { entityExists, findAll, findByField, firstRow, safeExecute } from './utils.js';
 
 export interface RoleData {
   id: string;
@@ -132,7 +132,9 @@ export class RoleService {
           isDefault
         })
         .returning(this.roleFields)
-        .get();
+        .then(firstRow);
+
+      if (!newRole) throw new Error('Role creation failed');
 
       if (permissionIds.length > 0) {
         await this.assignPermissionsToRole(newRole.id, permissionIds);
@@ -161,7 +163,9 @@ export class RoleService {
         .set(updateFields)
         .where(eq(roles.id, id))
         .returning(this.roleFields)
-        .get();
+        .then(firstRow);
+
+      if (!updatedRole) throw new Error('Role update failed');
 
       if (permissionIds !== undefined) {
         await this.updateRolePermissions(id, permissionIds);
@@ -230,7 +234,9 @@ export class RoleService {
           action
         })
         .returning(this.permissionFields)
-        .get();
+        .then(firstRow);
+
+      if (!newPermission) throw new Error('Permission creation failed');
 
       loggers.database.info({ permissionId: newPermission.id, name }, 'Permission created successfully');
       return newPermission;

@@ -1,11 +1,16 @@
 import { Editor } from '@monaco-editor/react';
 import * as styles from './styles.css';
+import { SchemaField, type EvaluationIssue, type FieldHint, type JsonSchema, type SchemaAssetOption } from '../schema';
 
 interface JsonEditorProps {
   content: string;
   jsonMode: 'visual' | 'text';
   jsonValidation: 'json' | 'json5';
   validationError: string | null;
+  schema?: JsonSchema;
+  hints?: Record<string, FieldHint>;
+  assets?: SchemaAssetOption[];
+  issues?: Record<string, EvaluationIssue[]>;
   onContentChange: (content: string) => void;
   onJsonModeChange: (mode: 'visual' | 'text') => void;
   onJsonValidationChange: (validation: 'json' | 'json5') => void;
@@ -15,11 +20,24 @@ export default function JsonEditor({
   content,
   jsonMode,
   jsonValidation,
+  assets,
+  hints,
+  issues,
+  schema,
   validationError,
   onContentChange,
   onJsonModeChange,
   onJsonValidationChange
 }: JsonEditorProps) {
+  const parsedContent = (() => {
+    if (!schema) return { ok: false as const, value: null };
+    try {
+      return { ok: true as const, value: JSON.parse(content || 'null') };
+    } catch {
+      return { ok: false as const, value: null };
+    }
+  })();
+
   return (
     <div className={styles.container}>
       {/* Toolbar */}
@@ -65,11 +83,22 @@ export default function JsonEditor({
       <div style={{ flex: 1 }}>
         {jsonMode === 'visual' ? (
           <div className={styles.visualJsonContainer}>
-            <div className={styles.visualJsonPlaceholder}>
-              <p className={styles.placeholderText}>
-                Visual JSON editor coming soon. Please use text mode for now.
-              </p>
-            </div>
+            {schema && parsedContent.ok ? (
+              <SchemaField
+                assets={assets}
+                hints={hints}
+                issues={issues}
+                onChange={(nextValue) => onContentChange(JSON.stringify(nextValue, null, 2))}
+                schema={schema}
+                value={parsedContent.value}
+              />
+            ) : (
+              <div className={styles.visualJsonPlaceholder}>
+                <p className={styles.placeholderText}>
+                  Visual JSON editing is available when a JSON Schema is attached to this file.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <Editor

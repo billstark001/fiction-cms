@@ -1,4 +1,4 @@
-import { sqlite as sqliteDb } from '../db/index.js';
+import { pool } from '../db/index.js';
 import { seedDatabase } from '../db/seed.js';
 import { createTables } from './create-tables.js';
 import { loggers } from './logger.js';
@@ -13,14 +13,15 @@ export async function initializeDatabase() {
     loggers.database.info('Starting database initialization');
 
     // Test database connection
-    const result = sqliteDb.prepare("SELECT name FROM sqlite_master WHERE type='table';").all();
+    const result = await pool.query<{ table_name: string }>(
+      "select table_name from information_schema.tables where table_schema = 'public'",
+    );
     loggers.database.info({
-      tableCount: result.length,
-      tables: result.map((r: any) => r.name)
+      tableCount: result.rows.length,
+      tables: result.rows.map((row) => row.table_name)
     }, `Database connected successfully`);
 
-    // If no tables exist, create them manually
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       loggers.database.info('No tables found, creating schema');
       await createTables();
     }

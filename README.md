@@ -1,244 +1,66 @@
 # Fiction CMS
 
-A modern, git-native content management system for static sites with GitHub Pages integration.
+Fiction CMS is being reshaped into a composable CMS toolkit for three resource kinds:
 
-[中文版本](./README_zh.md) | [Documentation](./docs/README.md)
+- assets: binary files or binary object records
+- texts: individual text resources
+- data collections: structured records governed by editable schema, coercion, validation, and evaluation rules
 
-## Overview
+The workspace is intentionally package-first. The backend and frontend remain useful scaffolding, but the immediate goal is reusable packages that another app, such as `moment-landing`, can consume directly.
 
-Fiction CMS is a comprehensive content management solution designed for managing multiple static site projects hosted on GitHub. It provides a user-friendly interface for non-technical users to edit Markdown, JSON, and SQLite files within Git repositories, while maintaining full version control and automated deployment capabilities.
+## Packages
 
-### Key Features
+- `@fiction-cms/common`: shared resource contracts, capability descriptors, and Zod validators.
+- `@fiction-cms/psql`: Drizzle PostgreSQL schema and adapters for texts and data collections. It does not create database connections.
+- `@fiction-cms/s3`: S3/R2 object helpers for assets and texts. It accepts an injected S3 client and bucket.
+- `@fiction-cms/git-engine`: Git-backed assets, texts, and data collections through files or SQLite files.
+- `@fiction-cms/data-collection`: pure-expr based rule compilation plus generic rule application.
+- `@fiction-cms/backend`: Hono API shell integrating auth, psql, s3, and git capabilities.
+- `@fiction-cms/frontend`: React admin shell with a reusable JSON Schema visual editor.
 
-- **Git-Native Workflow**: Direct integration with GitHub repositories
-- **Multi-Site Management**: Manage multiple static sites from one dashboard  
-- **Rich Content Editing**: Markdown editor with live preview, JSON editor with validation, and SQLite database management
-- **Enhanced Data Management**: 
-  - Column-level permissions for SQLite tables
-  - Zod-validated model files for structured data
-  - Custom file type support for specialized content
-- **Advanced Validation**: Pre-deployment validation commands with detailed reporting
-- **User Management**: Role-based access control with authentication
-- **Automated Deployment**: GitHub Pages integration with build automation
-- **File Management**: Asset handling with glob pattern support and file organization tools
-- **Real-time Collaboration**: Git-based version control and conflict resolution
-- **Security**: SQL injection protection and sanitized database operations
-
-## Architecture
-
-Fiction CMS follows a modern full-stack architecture:
-
-- **Frontend**: React + TypeScript + Vite with Monaco Editor integration
-- **Backend**: Hono.js API server with TypeScript
-- **Database**: SQLite with Drizzle ORM for user management
-- **Authentication**: PASETO v4 tokens with role-based permissions
-- **Content Storage**: Git repositories as the source of truth
-- **Deployment**: GitHub Pages with automated builds
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- pnpm (recommended) or npm
-- Git
-- GitHub Personal Access Token (for repository management)
-
-### Installation
-
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/billstark001/fiction-cms.git
-cd fiction-cms
-```
-
-2. **Install dependencies**
+## Development
 
 ```bash
 pnpm install
-# or npm install
+pnpm type-check
+pnpm build
 ```
 
-3. **Configure environment variables**
+The backend now expects PostgreSQL through `DATABASE_URL`. SQLite is intentionally limited to `@fiction-cms/git-engine` for repository-local SQLite files.
+
+Useful environment variables:
 
 ```bash
-# Backend configuration (.env in packages/backend/)
-DATABASE_PATH=./fiction-cms.db
-PASETO_SECRET_KEY=your-32-character-secret-key-here
-PORT=3001
-NODE_ENV=development
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/fiction_cms
 FRONTEND_URL=http://localhost:3000
+PASETO_SECRET_KEY=replace-with-a-stable-secret-at-least-32-chars
+ENCRYPTION_KEY=64-hex-characters-for-github-pat-encryption
 
-# Add your GitHub PAT for repository access
-GITHUB_PAT=your_github_personal_access_token
-```
+CMS_ENABLE_PSQL=true
+CMS_ENABLE_S3=false
+CMS_ENABLE_GIT=true
 
-4. **Start development servers**
+OIDC_ISSUER=
+OIDC_CLIENT_ID=
+OIDC_CLIENT_SECRET=
 
-```bash
-pnpm dev
-```
-
-This will start both the backend API server (<http://localhost:3001>) and frontend development server (<http://localhost:3000>).
-
-### Default Access
-
-- **Admin Username**: `admin`
-- **Admin Password**: `admin123`
-
-> ⚠️ **Security**: Change the default credentials immediately after first login in production environments.
-
-## Project Structure
-
-```
-fiction-cms/
-├── packages/
-│   ├── backend/           # Hono.js API server
-│   │   ├── src/
-│   │   │   ├── routes/    # API endpoints
-│   │   │   ├── engine/    # CMS core engine
-│   │   │   ├── auth/      # Authentication system
-│   │   │   └── db/        # Database models
-│   │   └── README.md      # Backend documentation
-│   └── frontend/          # React frontend
-│       ├── src/
-│       │   ├── components/ # UI components
-│       │   ├── pages/     # Application pages
-│       │   ├── hooks/     # Custom React hooks
-│       │   └── utils/     # Utility functions
-│       └── README.md      # Frontend documentation
-├── docs/                  # Comprehensive documentation
-└── README.md             # This file
+OAUTH_AUTHORIZATION_ENDPOINT=
+OAUTH_TOKEN_ENDPOINT=
+OAUTH_USERINFO_ENDPOINT=
+OAUTH_CLIENT_ID=
+OAUTH_CLIENT_SECRET=
 ```
 
 ## Documentation
 
-Comprehensive documentation is available in the [docs](./docs/) directory:
+Start with:
 
-### For Users
+- [Architecture](./docs/architecture.md)
+- [Development](./docs/development.md)
+- [API Notes](./docs/api.md)
+- [Security](./docs/security.md)
+- [Migration Notes](./docs/migration-guide.md)
 
-- **[User Guide](./docs/user-guide.md)** - Complete guide for content managers
-- **[Site Management](./docs/site-management.md)** - Managing multiple sites
-- **[Content Editing](./docs/content-editing.md)** - Working with different file types
+## Status
 
-### For Maintainers & Developers  
-
-- **[Architecture Overview](./docs/architecture.md)** - System architecture and design decisions
-- **[API Documentation](./docs/api.md)** - Complete API reference
-- **[Development Setup](./docs/development.md)** - Setting up development environment
-- **[Deployment Guide](./docs/deployment.md)** - Production deployment instructions
-
-### Technical References
-
-- **[Engine Documentation](./packages/backend/src/engine/README.md)** - CMS engine integration guide
-- **[Configuration Guide](./docs/configuration.md)** - Environment and site configuration
-- **[Security Guide](./docs/security.md)** - Security considerations and best practices
-
-## Development
-
-### Development Workflow
-
-1. **Development Server**
-
-```bash
-pnpm dev              # Start both frontend and backend
-pnpm --filter backend dev   # Backend only  
-pnpm --filter frontend dev  # Frontend only
-```
-
-2. **Building for Production**  
-
-```bash
-pnpm build            # Build both packages
-pnpm --filter backend build # Backend only
-pnpm --filter frontend build # Frontend only
-```
-
-3. **Code Quality**
-
-```bash
-pnpm lint             # Lint all packages
-pnpm type-check       # TypeScript type checking
-```
-
-### Contributing
-
-We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details on:
-
-- Development workflow
-- Code standards
-- Testing requirements  
-- Pull request process
-
-## Deployment
-
-Fiction CMS can be deployed to various platforms:
-
-- **Docker**: Container-ready with provided Dockerfile
-- **Traditional VPS**: Direct deployment with PM2 or systemd
-- **Cloud Platforms**: Heroku, Railway, DigitalOcean App Platform
-
-See the [Deployment Guide](./docs/deployment.md) for detailed instructions.
-
-## Use Cases
-
-Fiction CMS is ideal for:
-
-- **Documentation Sites**: Managing technical documentation across multiple projects
-- **Blog Networks**: Running multiple blogs with shared user management  
-- **Portfolio Sites**: Managing designer/developer portfolios with database-driven content
-- **Small Business Sites**: Multiple site management for agencies
-- **Educational Content**: Course materials and educational resources
-
-## Technology Stack
-
-### Frontend
-
-- **React 18** - Modern React with hooks
-- **TypeScript** - Type-safe JavaScript
-- **Vite** - Fast build tool and development server
-- **Vanilla Extract** - Type-safe CSS-in-JS
-- **Monaco Editor** - VS Code-like editing experience
-
-### Backend  
-
-- **Hono.js** - Fast, lightweight web framework
-- **TypeScript** - End-to-end type safety
-- **Drizzle ORM** - Type-safe database operations
-- **SQLite** - Embedded database for user management
-- **PASETO** - Secure token-based authentication
-
-### DevOps & Tools
-
-- **pnpm** - Fast, disk space efficient package manager
-- **ESLint** - Code linting and formatting
-- **Prettier** - Code formatting
-- **GitHub Actions** - CI/CD workflows
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-
-## Support & Community
-
-- **Issues**: [GitHub Issues](https://github.com/billstark001/fiction-cms/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/billstark001/fiction-cms/discussions)
-- **Documentation**: [Project Documentation](./docs/)
-
-## Roadmap
-
-Upcoming features and improvements:
-
-- [ ] **Enhanced Database Management**: Visual SQLite table editor
-- [ ] **File Upload System**: Asset management with drag-and-drop
-- [ ] **Template System**: Site templates and content scaffolding
-- [ ] **Plugin Architecture**: Extensible plugin system
-- [ ] **Real-time Collaboration**: Multi-user editing with conflict resolution
-- [ ] **Advanced Search**: Full-text search across all managed sites
-- [ ] **Deployment Monitoring**: Build status and deployment tracking
-- [ ] **Backup & Recovery**: Automated backup solutions
-
----
-
-*Built with ❤️ by [Bill Toshiaki Stark](https://github.com/billstark001)*
+Version `0.1.0` is an architecture baseline. The packages compile and expose the intended boundaries, but the backend/frontend product flow is still transitional.

@@ -1,19 +1,18 @@
-import Database, { type Database as DatabaseType } from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from './schema.js';
-import path from 'path';
+import pg from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as appSchema from './schema.js';
+import { cmsPsqlSchema } from '@fiction-cms/psql';
 
-const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'fiction-cms.db');
+const { Pool } = pg;
 
-const sqliteDb = new Database(dbPath);
+const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/fiction_cms';
 
-// Enable WAL mode for better concurrent access
-sqliteDb.pragma('journal_mode = WAL');
-sqliteDb.pragma('synchronous = NORMAL');
-sqliteDb.pragma('cache_size = 1000000');
-sqliteDb.pragma('foreign_keys = ON');
+export const pool = new Pool({ connectionString });
 
-export const db = drizzle(sqliteDb, { schema });
-
-// Export type-safe sqlite instance
-export const sqlite: DatabaseType = sqliteDb;
+export const db = drizzle({
+  client: pool,
+  schema: {
+    ...appSchema,
+    ...cmsPsqlSchema,
+  },
+});

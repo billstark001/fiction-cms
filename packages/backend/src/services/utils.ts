@@ -21,6 +21,10 @@ export function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
   return result;
 }
 
+export function firstRow<T>(rows: T[]): T | undefined {
+  return rows[0];
+}
+
 /**
  * 通用查找方法
  */
@@ -33,11 +37,11 @@ export async function findByField<T>(
 ): Promise<T | null> {
   return safeExecute(
     async () => {
-      const result = await db.select(fields)
+      const rows = await db.select(fields)
         .from(table)
         .where(eq(table[fieldName], value))
-        .get();
-      return result || null;
+        .limit(1);
+      return rows[0] || null;
     },
     `find ${entityType} by ${fieldName}`,
     { [fieldName]: value }
@@ -64,8 +68,8 @@ export async function entityExists(table: any, fieldName: string, value: string,
       if (excludeId) {
         condition = and(condition, ne(table.id, excludeId))!;
       }
-      const result = await db.select({ id: table.id }).from(table).where(condition).get();
-      return !!result;
+      const rows = await db.select({ id: table.id }).from(table).where(condition).limit(1);
+      return rows.length > 0;
     },
     `check ${fieldName} existence`,
     { [fieldName]: value, excludeId }

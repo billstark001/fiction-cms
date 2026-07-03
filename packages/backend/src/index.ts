@@ -44,7 +44,7 @@ app.route('/api', api)
 app.get('/', (c) => {
   return c.json({ 
     message: 'Fiction CMS Backend API',
-    version: '1.0.0',
+    version: '0.1.0',
     timestamp: new Date().toISOString(),
     documentation: '/api/health'
   })
